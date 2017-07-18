@@ -1,16 +1,15 @@
 var fs = require('fs')
 var data = fs.readFileSync('newexample.txt', 'utf-8')
 var hummer = new Map()
-
 function programParser (data) {
-	if(data) { return defineParser(data) }
+	if(data) { return statementParser(data) }
 	return null 
 }
-
 function statementParser (input) {
 	return defineParser(input)
 }
 const openBracketOp = (input) => (input.startsWith('(')) ? ['(', input.slice(1)] : null
+const closeBracketOp = (input) => (input.startsWith(')')) ? [')', input.slice(1)] : null
 const spaceParsedOp = (input) => { 
 	let sumo = input.match(/^\s+/)
 	if(!sumo) return null
@@ -31,75 +30,47 @@ const numberParserOp = (input) => {
 	if(data) return [parseInt(data[0]), input.slice(data[0].length)]
 	return null	
 }
-const closeBracketOp = (input) => (input.startsWith(')')) ? [')', input.slice(1)] : null
-
 function defineParser (input) {
- 	
  	let indigo = openBracketOp(input)// will return ['(', remData] or null
  	if(!indigo) return null
- 	
  	indigo = spaceParsedOp(indigo[1])// will return [null, remData] or null
  	if(!indigo) return null
- 	
  	indigo = defineParsedOp(indigo[1])// will return ['define', remData] or null
  	if(!indigo) return null
- 	
  	indigo = spaceParsedOp(indigo[1])// will return [null, remData] or null
  	if(!indigo) return null
-
  	indigo = identifierParsedOp(indigo[1])// will return [matchedIdentifier, remData] or null
  	if(!indigo) return null
  	let key = indigo[0]
- 	
  	indigo = spaceParsedOp(indigo[1])// will return [null, remData] or null
  	if(!indigo) return null
-
- 	indigo = numberParserOp(indigo[1])// will return [number, remData] or null
- 	let value = indigo[0]
-
+ 	//OPERATION TO BE PERFORMED HERE
+ 	indigo = expressionParser(indigo[1])
+ 	//indigo = numberParserOp(indigo[1])// will return [number, remData] or null
+ 	let value = indigo
  	hummer.set(key,value)
-
  	return hummer
 }
+const plusParser = (data) => data.startsWith('+') ? ['+', data.slice(1)] : null
+const minusParser = (data) => data.startsWith('-') ? ['-', data.slice(1)] : null
+const starParser = (data) => data.startsWith('*') ? ['*', data.slice(1)] : null 
+const divParser = (data) => data.startsWith('/') ? ['/', data.slice(1)] : null 
+function expressionParser (input) {
+	let sum = 0
+	var arr = []
+	let Tiago = openBracketOp(input) // will return ['(', remData] or null
+	Tiago = plusParser(Tiago[1]) // will return ['+', 'remData'] or null
+	arr.push(Tiago[0])
+	Tiago = spaceParsedOp(Tiago[1]) // will return [null, remData] or null
+	Tiago = numberParserOp(Tiago[1])
+	arr.push(Tiago[0])
+	Tiago = spaceParsedOp(Tiago[1]) // will return [null, remData] or null
+	Tiago = numberParserOp(Tiago[1])
+	arr.push(Tiago[0])
+	Tiago = closeBracketOp(Tiago[1])
+	for(let i = 1; i < arr.length; i++)
+		if(arr[0] === '+')
+			sum += arr[i]
+	return sum
+}
 console.log(programParser(data))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
