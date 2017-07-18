@@ -59,8 +59,16 @@ function expressionParser (input) {
 	let sum = 0
 	var arr = []
 	let Tiago = openBracketOp(input) // will return ['(', remData] or null
-	Tiago = plusParser(Tiago[1]) // will return ['+', 'remData'] or null
+	if((Tiago = plusParser(Tiago[1])) !== null) // will return ['+', 'remData'] or null
 	arr.push(Tiago[0])
+	else if((Tiago = minusParser(Tiago[1])) !== null)
+	arr.push(Tiago[0])
+	else if((Tiago = starParser(Tiago[1])) !== null) 
+	arr.push(Tiago[0])
+	else {
+		(Tiago = divParser(Tiago[1]))
+		arr.push(Tiago[0])
+	}
 	Tiago = spaceParsedOp(Tiago[1]) // will return [null, remData] or null
 	Tiago = numberParserOp(Tiago[1])
 	arr.push(Tiago[0])
@@ -71,6 +79,8 @@ function expressionParser (input) {
 	for(let i = 1; i < arr.length; i++)
 		if(arr[0] === '+')
 			sum += arr[i]
+		else if(arr[0] === '-')
+			sum = arr[i]
 	return sum
 }
 console.log(programParser(data))
