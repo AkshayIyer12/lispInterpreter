@@ -16,13 +16,17 @@ const spaceParsedOp = (input) => {
 const plusParser = (data) => data.startsWith('+') ? [add, data.slice(1)] : null
 const minusParser = (data) => data.startsWith('-') ? [sub, data.slice(1)] : null
 const starParser = (data) => data.startsWith('*') ? [mul, data.slice(1)] : null
-const divParser = (data) => data.startsWith('/') ? [div, data.slice(1)] : null
+const slashParser = (data) => data.startsWith('/') ? [div, data.slice(1)] : null
 
 const greaterThanParser = (data) => data.startsWith('>') ? [greaterThan, data.slice(1)] : null
 const lessThanParser = (data) => data.startsWith('<') ? [lessThan, data.slice(1)] : null
 const greaterThanEqualToParser = (data) => data.startsWith('>=') ? [greaterThanEqualTo, data.slice(2)] : null
 const lessThanEqualToParser = (data) => data.startsWith('<=') ? [lessThanEqualTo, data.slice(2)] : null
 const EqualToParser = (data) => data.startsWith('==') ? [EqualTo, data.slice(2)] : null
+
+const maxParser = (data) => data.startsWith('max') ? [maxNumber, input.slice(3)] : null
+const minParser = (data) => data.startsWith('min') ? [minNumber, input.slice(3)] : null
+const notParser = (data) => data.startsWith('not') ? [notNumber, input.slice(3)] : null
 
 /*
 const defineParsedOp = (input) => (input.startsWith('define')) ? ['define', input.slice(6)] : null
@@ -43,6 +47,7 @@ const numberParserOp = (input) => {
   if (data) return [parseInt(data[0]), input.slice(data[0].length)]
   return null
 }
+const operatorParser = (input) => { return (plusParser(input) || minusParser(input) || starParser(input) || slashParser(input) || greaterThanParser(input) || lessThanParser(input) || greaterThanEqualToParser(input) || lessThanEqualToParser(input) || maxParser(input) || minParser(input) || notParser(input)) }
 
 const add = (a, b) => a + b
 const sub = (a, b) => a - b
@@ -58,13 +63,18 @@ const greaterThanEqualTo = (a, b) => a >= b
 const lessThanEqualTo = (a, b) => a <= b
 const EqualTo = (a, b) => a === b
 
+const maxNumber = (a, b) => a > b
+const minNumber = (a, b) => a < b
+const notNumber = (a) => !a
+
 const expressionParser = (input) => {
   let result = []
   let output
   if (!input.startsWith('(')) return null
   input = input.slice(1)
   while (true) {
-    output = lessThanParser(input)
+    output = greaterThanEqualToParser(input)
+    if (!output) return null
     result.push(output[0])
     output = spaceParsedOp(output[1])
     output = numberParserOp(output[1])
@@ -76,7 +86,7 @@ const expressionParser = (input) => {
   }
 }
 let result = []
-let input = '(< 100 50)'
+let input = '(>= 100 50)'
 result = expressionParser(input)
 let doga = result.shift()
 let output = doga(...result)
