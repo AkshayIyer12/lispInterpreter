@@ -63,8 +63,8 @@ const greaterThanEqualTo = (a, b) => a >= b
 const lessThanEqualTo = (a, b) => a <= b
 const EqualTo = (a, b) => a === b
 
-const maxNumber = (a, b) => a > b
-const minNumber = (a, b) => a < b
+const maxNumber = (a, b) => a > b ? a : b
+const minNumber = (a, b) => a < b ? a : b
 const notNumber = (a) => !a
 
 const expressionParser = (input) => {
