@@ -18,11 +18,18 @@ const minusParser = (data) => data.startsWith('-') ? [sub, data.slice(1)] : null
 const starParser = (data) => data.startsWith('*') ? [mul, data.slice(1)] : null
 const divParser = (data) => data.startsWith('/') ? [div, data.slice(1)] : null
 
+const greaterThanParser = (data) => data.startsWith('>') ? [greaterThan, data.slice(1)] : null
+const lessThanParser = (data) => data.startsWith('<') ? [lessThan, data.slice(1)] : null
+const greaterThanEqualToParser = (data) => data.startsWith('>=') ? [greaterThanEqualTo, data.slice(2)] : null
+const lessThanEqualToParser = (data) => data.startsWith('<=') ? [lessThanEqualTo, data.slice(2)] : null
+const EqualToParser = (data) => data.startsWith('==') ? [EqualTo, data.slice(2)] : null
+
 /*
 const defineParsedOp = (input) => (input.startsWith('define')) ? ['define', input.slice(6)] : null
-const ifParsedOp = (input) => (input.startsWith('if')) ? ['if', input.slice(6)] : null
 const printParsedOp = (input) => (input.startsWith('print')) ? ['print', input.slice(6)] : null
+const ifParsedOp = (input) => (input.startsWith('if')) ? ['if', input.slice(6)] : null
 */
+
 const identifierParsedOp = (input) => {
   let re = /^[a-z]+[0-9]*[a-z]*/i
   let indica = input.match(re)
@@ -45,16 +52,32 @@ const div = (a, b) => {
   return a / b
 }
 
+const greaterThan = (a, b) => a > b
+const lessThan = (a, b) => a < b
+const greaterThanEqualTo = (a, b) => a >= b
+const lessThanEqualTo = (a, b) => a <= b
+const EqualTo = (a, b) => a === b
+
+const expressionParser = (input) => {
+  let result = []
+  let output
+  if (!input.startsWith('(')) return null
+  input = input.slice(1)
+  while (true) {
+    output = lessThanParser(input)
+    result.push(output[0])
+    output = spaceParsedOp(output[1])
+    output = numberParserOp(output[1])
+    result.push(output[0])
+    output = spaceParsedOp(output[1])
+    output = numberParserOp(output[1])
+    result.push(output[0])
+    if (output[1] === ')') return result
+  }
+}
 let result = []
-let data = '/ 100 50'
-let output = divParser(data)
-result.push(output[0])
-output = spaceParsedOp(output[1])
-output = numberParserOp(output[1])
-result.push(output[0])
-output = spaceParsedOp(output[1])
-output = numberParserOp(output[1])
-result.push(output[0])
+let input = '(< 100 50)'
+result = expressionParser(input)
 let doga = result.shift()
-output = doga(...result)
+let output = doga(...result)
 console.log(output)
