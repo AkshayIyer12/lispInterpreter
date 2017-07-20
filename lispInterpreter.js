@@ -4,9 +4,9 @@ var data = fs.readFileSync('newexample.txt', 'utf-8')
 */
 /*
 const openBracketOp = (input) => (input.startsWith('(')) ? ['(', input.slice(1)] : null
-
-const closeBracketOp = (input) => (input.startsWith(')')) ? [')', input.slice(1)] : null
 */
+const closeBracketOp = (input) => (input.startsWith(')')) ? [')', input.slice(1)] : null
+
 const ENV = {}
 
 /* Various Functions */
@@ -103,15 +103,43 @@ const expressionParser = (input) => {
     result.push(output[0])
     while(true){
     output = spaceParsedOp(output[1])
-    output = numberParserOp(output[1])
+    output = numberParserOp(output[1]) || expressionedParser(output[1])
     result.push(output[0])
     if(output[1] === ')') break
     }	
     if (output[1] === ')') return result
   }
 }
+const expressionedParser = (input) => {
+  let vid
+  let result = []
+  let output
+  if (!input.startsWith('(')) return null
+  input = input.slice(1)
+  while (true) {
+    output = operatorParser(input)
+    if (!output) return null
+    result.push(output[0])
+    output = spaceParsedOp(output[1])
+    output = numberParserOp(output[1])
+    result.push(output[0])
+    while(true){
+    output = spaceParsedOp(output[1])
+    output = numberParserOp(output[1])
+    result.push(output[0])
+    output = (vid = closeBracketOp(output[1])) ? vid : output
+    if(output[0] === ')')
+    {
+      let doga = result.shift()
+      result = doga(result)
+      break;
+    } 
+    } 
+    if (output[1] === ')') return [result, output[1]]
+  }
+}
 
-let input = '(+ 100 20 30 40)'
+let input = '(+ 100 (+ 200 20 3000 4000))'
 let output = expressionParser(input)
 if (output === null) {
   output = 'Error'
