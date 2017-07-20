@@ -22,7 +22,7 @@ const maxNumber = (a, b) => a > b ? a : b
 const minNumber = (a, b) => a < b ? a : b
 const notNumber = (a) => !a
 const defLisp = (a, b) => { ENV.a = b }
-const ifLisp = (a, b, c) => a ? b : c
+//const ifLisp = (a, b, c) => a ? b : c
 // const beginLisp = (a) => { }
 
 const spaceParsedOp = (input) => {
@@ -106,10 +106,10 @@ const expressionParser = (input) => {
   }
 }
 
-let input = '(define a 100)'
+let input = '(define dg 100)'
 let output = expressionParser(input)
 if (output === null) {
-  output = 'Oye tera expressionParser chala nahi'
+  output = 'Error'
 } else {
   let doga = output.shift()
   output = doga(...output)
