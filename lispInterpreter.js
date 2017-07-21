@@ -2,10 +2,6 @@
 var fs = require('fs')
 var data = fs.readFileSync('newexample.txt', 'utf-8')
 */
-
-const openBracketOp = (input) => (input.startsWith('(')) ? ['(', input.slice(1)] : null
-const closeBracketOp = (input) => (input.startsWith(')')) ? [')', input.slice(1)] : null
-
 const ENV = {}
 
 /* Various Functions */
@@ -52,6 +48,8 @@ const defParser = (data) => data.startsWith('define') ? [defLisp, input.slice(7)
 // const ifParser = (data) => data.startsWith('if') ? [ifLisp, input.slice(2)] : null
 // const printedParser = (data) => data.startsWith('print') ? [printLisp, input.slice(6)] : null
 // const beginparser = (data) => data.startsWith('begin') ? [beginLisp, input.slice(5)] : null
+const openBracketOp = (input) => (input.startsWith('(')) ? ['(', input.slice(1)] : null
+const closeBracketOp = (input) => (input.startsWith(')')) ? [')', input.slice(1)] : null
 
 const identifierParsedOp = (input) => {
   let re = /^[a-z]+[0-9]*[a-z]*/i
