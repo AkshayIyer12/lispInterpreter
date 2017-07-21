@@ -1,7 +1,5 @@
-/*
 var fs = require('fs')
-var data = fs.readFileSync('newexample.txt', 'utf-8')
-*/
+var input = fs.readFileSync('newexample.txt', 'utf-8')
 const ENV = {}
 
 /* Various Functions */
@@ -18,7 +16,7 @@ const maxNumber = (a, b) => a > b ? a : b
 const minNumber = (a, b) => a < b ? a : b
 const notNumber = (a) => !a
 const defLisp = (a, b) => { ENV[a] = b }
-// const printLisp = (a) => { return (a) }
+const printLisp = (a) => { return a }
 // const ifLisp = (a, b, c) => a ? b : c
 // const beginLisp = (a) => { }
 
@@ -40,13 +38,13 @@ const greaterThanEqualToParser = (data) => data.startsWith('>=') ? [greaterThanE
 const lessThanEqualToParser = (data) => data.startsWith('<=') ? [lessThanEqualTo, data.slice(2)] : null
 const equalToParser = (data) => data.startsWith('==') ? [EqualTo, data.slice(2)] : null
 /* Max, Min and Not */
-const maxParser = (data) => data.startsWith('max') ? [maxNumber, input.slice(3)] : null
-const minParser = (data) => data.startsWith('min') ? [minNumber, input.slice(3)] : null
-const notParser = (data) => data.startsWith('not') ? [notNumber, input.slice(3)] : null
+const maxParser = (data) => data.startsWith('max') ? [maxNumber, data.slice(3)] : null
+const minParser = (data) => data.startsWith('min') ? [minNumber, data.slice(3)] : null
+const notParser = (data) => data.startsWith('not') ? [notNumber, data.slice(3)] : null
 /* Define, if and Begin */
-const defParser = (data) => data.startsWith('define') ? [defLisp, input.slice(7)] : null
+const defParser = (data) => data.startsWith('define') ? [defLisp, data.slice(6)] : null
 // const ifParser = (data) => data.startsWith('if') ? [ifLisp, input.slice(2)] : null
-// const printedParser = (data) => data.startsWith('print') ? [printLisp, input.slice(6)] : null
+const printedParser = (data) => data.startsWith('print') ? [printLisp, data.slice(5)] : null
 // const beginparser = (data) => data.startsWith('begin') ? [beginLisp, input.slice(5)] : null
 const openBracketOp = (input) => (input.startsWith('(')) ? ['(', input.slice(1)] : null
 const closeBracketOp = (input) => (input.startsWith(')')) ? [')', input.slice(1)] : null
@@ -75,6 +73,7 @@ const operatorParser = (input) => {
 const expressionParser = (input) => {
   let result = []
   let vid
+  let count = 1
   let output
   if (!input.startsWith('(')) return null
   input = input.slice(1)
@@ -91,19 +90,25 @@ const expressionParser = (input) => {
       result.push(output[0])
       output = (vid = closeBracketOp(output[1])) ? vid : output
       if (output[0] === ')') {
-        return [evaluate(result), output[1]]
+        return [evaluate(result, count), output[1]]
       }
     }
   }
 }
 
-function evaluate (input) {
+function evaluate (input, count) {
   let doga = input.shift()
-  return doga(input) || doga(...input)
+  if (count > 1) {
+    return doga(...input)
+  }
+  else {
+    return doga(input)
+  }
 }
 
 function defineParser (input) {
   let arr = []
+  let count = 1
   input = openBracketOp(input)
   if (input === null) return null
   input = defParser(input[1])
@@ -111,37 +116,44 @@ function defineParser (input) {
   arr.push(input[0])
   input = spaceParsedOp(input[1])
   if (input === null) return null
+  count++
   input = identifierParsedOp(input[1])
-  if (input === null) return null
   arr.push(input[0])
+  if (input === null) return null
   input = spaceParsedOp(input[1])
   if (input === null) return null
   input = numberParserOp(input[1]) || expressionParser(input[1])
   if (input === null) return null
   arr.push(input[0])
-  evaluate(arr)
+  evaluate(arr, count)
   input = closeBracketOp(input[1])
   input = input[1]
   return input
 }
 
-// function printParser (input) {
-//   let arr = []
-//   input = openBracketOp(input)
-//   input = printedParser(input[1])
-//   arr.push(input[0])
-//   input = spaceParsedOp(input[1])
-//   input = expressionParser(input[1])
-//   arr.push(input[0])
-//   return evaluate(arr)
-// }
+function printParser (input) {
+  let arr = []
+  let count = 1
+  let output
+  input = openBracketOp(input)
+  input = printedParser(input[1])
+  if (input === null) return null
+  arr.push(input[0])
+  input = spaceParsedOp(input[1])
+  input = numberParserOp(input[1]) || expressionParser(input[1]) || identifierParsedOp(input[1])
+  arr.push(input[0])
+  input = closeBracketOp(input[1])
+  output = evaluate(arr, count)
+  console.log(output[0])
+  return input[1]
+}
 
 function statementParser (input) {
-  return defineParser(input)
+  return defineParser(input) || printParser(input)
 }
 
 function programParser (input) {
-  while (input !== '') {
+  while (input !== '' && input !== null) {
     let output = ''
     output = statementParser(input)
     input = output
@@ -149,10 +161,9 @@ function programParser (input) {
   return ENV
 }
 
-let input = '(define r (+ 100 (* 80 100)))(define b 100)'
 let output = programParser(input)
 if (output === null) {
   output = 'Error'
 } else {
-  console.log(ENV)
+  console.log(output)
 }
