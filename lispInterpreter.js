@@ -60,12 +60,14 @@ const identifierParsedOp = (input) => {
   let indicaLength = indica[0].length
   return [indica[0], input.slice(indicaLength)]
 }
+
 const numberParserOp = (input) => {
   let re = /^[0-9]+/
   let data = re.exec(input)
   if (data) return [parseInt(data[0]), input.slice(data[0].length)]
   return null
 }
+
 const operatorParser = (input) => {
   return (plusParser(input) || minusParser(input) || starParser(input) || slashParser(input) || greaterThanParser(input) ||
           lessThanParser(input) || greaterThanEqualToParser(input) || lessThanEqualToParser(input) || equalToParser(input) ||
@@ -96,6 +98,7 @@ const expressionParser = (input) => {
     }
   }
 }
+
 function evaluate (input) {
   let doga = input.shift()
   return doga(input) || doga(...input)
