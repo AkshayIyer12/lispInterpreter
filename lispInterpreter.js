@@ -2,9 +2,8 @@
 var fs = require('fs')
 var data = fs.readFileSync('newexample.txt', 'utf-8')
 */
-/*
+
 const openBracketOp = (input) => (input.startsWith('(')) ? ['(', input.slice(1)] : null
-*/
 const closeBracketOp = (input) => (input.startsWith(')')) ? [')', input.slice(1)] : null
 
 const ENV = {}
@@ -22,8 +21,9 @@ const EqualTo = (a, b) => a === b
 const maxNumber = (a, b) => a > b ? a : b
 const minNumber = (a, b) => a < b ? a : b
 const notNumber = (a) => !a
-const defLisp = (a, b) => { ENV.a = b }
-//const ifLisp = (a, b, c) => a ? b : c
+const defLisp = (a, b) => { ENV[a] = b }
+// const printLisp = (a) => { return (a) }
+// const ifLisp = (a, b, c) => a ? b : c
 // const beginLisp = (a) => { }
 
 const spaceParsedOp = (input) => {
@@ -48,14 +48,11 @@ const maxParser = (data) => data.startsWith('max') ? [maxNumber, input.slice(3)]
 const minParser = (data) => data.startsWith('min') ? [minNumber, input.slice(3)] : null
 const notParser = (data) => data.startsWith('not') ? [notNumber, input.slice(3)] : null
 /* Define, if and Begin */
-const defineParser = (data) => data.startsWith('define') ? [defLisp, input.slice(7)] : null
-const ifParser = (data) => data.startsWith('if') ? [ifLisp, input.slice(2)] : null
+const defParser = (data) => data.startsWith('define') ? [defLisp, input.slice(7)] : null
+// const ifParser = (data) => data.startsWith('if') ? [ifLisp, input.slice(2)] : null
+// const printedParser = (data) => data.startsWith('print') ? [printLisp, input.slice(6)] : null
 // const beginparser = (data) => data.startsWith('begin') ? [beginLisp, input.slice(5)] : null
-/*
-const defineParsedOp = (input) => (input.startsWith('define')) ? ['define', input.slice(6)] : null
-const printParsedOp = (input) => (input.startsWith('print')) ? ['print', input.slice(6)] : null
-const ifParsedOp = (input) => (input.startsWith('if')) ? ['if', input.slice(6)] : null
-*/
+
 const identifierParsedOp = (input) => {
   let re = /^[a-z]+[0-9]*[a-z]*/i
   let indica = input.match(re)
@@ -70,27 +67,14 @@ const numberParserOp = (input) => {
   return null
 }
 const operatorParser = (input) => {
-  return (
- plusParser(input) ||
- minusParser(input) ||
- starParser(input) ||
- slashParser(input) ||
- greaterThanParser(input) ||
- lessThanParser(input) ||
- greaterThanEqualToParser(input) ||
- lessThanEqualToParser(input) ||
- equalToParser(input) ||
- defineParser(input) ||
- ifParser(input) ||
- // beginparser(input) ||
- identifierParsedOp(input) ||
- maxParser(input) ||
- minParser(input) ||
- notParser(input))
+  return (plusParser(input) || minusParser(input) || starParser(input) || slashParser(input) || greaterThanParser(input) ||
+          lessThanParser(input) || greaterThanEqualToParser(input) || lessThanEqualToParser(input) || equalToParser(input) ||
+          defineParser(input) || identifierParsedOp(input) || maxParser(input) || minParser(input) || notParser(input))
 }
 
 const expressionParser = (input) => {
   let result = []
+  let vid
   let output
   if (!input.startsWith('(')) return null
   input = input.slice(1)
@@ -99,53 +83,75 @@ const expressionParser = (input) => {
     if (!output) return null
     result.push(output[0])
     output = spaceParsedOp(output[1])
-    output = identifierParsedOp(output[1]) || numberParserOp(output[1])
+    output = numberParserOp(output[1])
     result.push(output[0])
-    while(true){
-    output = spaceParsedOp(output[1])
-    output = numberParserOp(output[1]) || expressionedParser(output[1])
-    result.push(output[0])
-    if(output[1] === ')') break
-    }	
-    if (output[1] === ')') return result
+    while (true) {
+      output = spaceParsedOp(output[1])
+      output = numberParserOp(output[1]) || expressionParser(output[1])
+      result.push(output[0])
+      output = (vid = closeBracketOp(output[1])) ? vid : output
+      if (output[0] === ')') {
+        return [evaluate(result), output[1]]
+      }
+    }
   }
 }
-const expressionedParser = (input) => {
-  let vid
-  let result = []
-  let output
-  if (!input.startsWith('(')) return null
-  input = input.slice(1)
-  while (true) {
-    output = operatorParser(input)
-    if (!output) return null
-    result.push(output[0])
-    output = spaceParsedOp(output[1])
-    output = numberParserOp(output[1])
-    result.push(output[0])
-    while(true){
-    output = spaceParsedOp(output[1])
-    output = numberParserOp(output[1])
-    result.push(output[0])
-    output = (vid = closeBracketOp(output[1])) ? vid : output
-    if(output[0] === ')')
-    {
-      let doga = result.shift()
-      result = doga(result)
-      break;
-    } 
-    } 
-    if (output[1] === ')') return [result, output[1]]
-  }
+function evaluate (input) {
+  let doga = input.shift()
+  return doga(input) || doga(...input)
 }
 
-let input = '(+ 100 (+ 200 20 3000 4000))'
-let output = expressionParser(input)
+function defineParser (input) {
+  let arr = []
+  input = openBracketOp(input)
+  if (input === null) return null
+  input = defParser(input[1])
+  if (input === null) return null
+  arr.push(input[0])
+  input = spaceParsedOp(input[1])
+  if (input === null) return null
+  input = identifierParsedOp(input[1])
+  if (input === null) return null
+  arr.push(input[0])
+  input = spaceParsedOp(input[1])
+  if (input === null) return null
+  input = numberParserOp(input[1]) || expressionParser(input[1])
+  if (input === null) return null
+  arr.push(input[0])
+  evaluate(arr)
+  input = closeBracketOp(input[1])
+  input = input[1]
+  return input
+}
+
+// function printParser (input) {
+//   let arr = []
+//   input = openBracketOp(input)
+//   input = printedParser(input[1])
+//   arr.push(input[0])
+//   input = spaceParsedOp(input[1])
+//   input = expressionParser(input[1])
+//   arr.push(input[0])
+//   return evaluate(arr)
+// }
+
+function statementParser (input) {
+  return defineParser(input)
+}
+
+function programParser (input) {
+  while (input !== '') {
+    let output = ''
+    output = statementParser(input)
+    input = output
+  }
+  return ENV
+}
+
+let input = '(define r (+ 100 (* 80 100)))(define b 100)'
+let output = programParser(input)
 if (output === null) {
   output = 'Error'
 } else {
-  let doga = output.shift()
-  output = doga(output) || doga(...output)
+  console.log(ENV)
 }
-console.log(output)
-console.log(ENV)
