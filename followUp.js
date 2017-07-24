@@ -1,5 +1,5 @@
 var fs = require('fs')
-var input = fs.readFileSync('followUpTestSet.txt', 'utf-8')
+var input = fs.readFileSync('newexample.txt', 'utf-8')
 const ENV = {}
 
 // Space parser
@@ -83,11 +83,11 @@ const maxParser = (data) => data.startsWith('max') ? [maxNumber, data.slice(3)] 
 const minParser = (data) => data.startsWith('min') ? [minNumber, data.slice(3)] : null
 const notParser = (data) => data.startsWith('not') ? [notNumber, data.slice(3)] : null
 
-/* Finding Define, print, if and lambda string */
-const defParser = (data) => data.startsWith('define') ? [defLisp, data.slice(6)] : null
-const ifParser = (data) => data.startsWith('if') ? [ifLisp, input.slice(2)] : null
-const printedParser = (data) => data.startsWith('print') ? [printLisp, data.slice(5)] : null
-const lambdaParser = (data) => data.startsWith('lambda') ? [lambdaLisp, data.slice(6)] : null
+/* Define, print, if and lambda string slicer*/
+const defineSlicerParser = (data) => data.startsWith('define') ? [defLisp, data.slice(6)] : null
+const ifSlicerParser = (data) => data.startsWith('if') ? [ifLisp, input.slice(2)] : null
+const printSlicerParser = (data) => data.startsWith('print') ? [printLisp, data.slice(5)] : null
+const lambdaSlicerParser = (data) => data.startsWith('lambda') ? ['lambdaLisp', data.slice(6)] : null
 
 /* Finding openBracket and closeBracket */
 const openBracketOp = (input) => (input.startsWith('(')) ? ['(', input.slice(1)] : null
@@ -97,6 +97,13 @@ const closeBracketOp = (input) => (input.startsWith(')')) ? [')', input.slice(1)
 const operatorParser = (input) => {
   return (plusParser(input) || minusParser(input) || starParser(input) || slashParser(input) || greaterThanEqualToParser(input) || lessThanEqualToParser(input) || equalToParser(input) ||
            greaterThanParser(input) || lessThanParser(input) || defineParser(input) || identifierParsedOp(input) || maxParser(input) || minParser(input) || notParser(input))
+}
+
+// Evaluate for expression parser result array
+function evaluate (input, count) {
+  let operation = input.shift()
+  if (count > 1) return operation(...input)
+  else return operation(input)
 }
 
 // Expression Parser
@@ -127,37 +134,51 @@ const expressionParser = (input) => {
 }
 
 // Arguments Parser for lambda function
-const argumentsParser = (input) => {
+const lambdaArgumentsParser = (input) => {
   let result = []
   input = openBracketOp(input)
-  if (input !== null) {
-    while (!input.startsWith(')')) {
-      input = identifierParsedOp(input[1])
-      if (input !== null) {
-        result.push(input[0])
-        input = (input = spaceParsedOp(input[1])) ? input[1] : input
-      }
-    }
-    input = closeBracketOp(input)
-    return input[1]
+  input = input[1]
+  let output
+  while (!input.startsWith(')')) {
+    input = identifierParsedOp(input)
+    result.push(input[0])
+    input = (output = spaceParsedOp(input[1])) ? output[1] : input[1]
   }
+  input = closeBracketOp(input)
+  return [result, input[1]]
 }
-const lambdaPar = (input) => {
+
+// Body Parser for lambda function
+const lambdaBodyParser = (input) => {
+  let count = 0
+  let k = 0
+  let output = ''
+  do {
+    if (input[k] === '(') count++
+    if (input[k] === ')') count--
+    output += input[k]
+    k++
+  } while (count !== 0)
+  input = input.slice(k)
+  return [output, input]
+}
+
+// lambda Parser
+const lambdaParser = (input) => {
+  let arr = []
   input = openBracketOp(input)
   if (input === null) return null
-  input = lambdaParser(input[1])
+  input = lambdaSlicerParser(input[1])
+  arr.push(input[0])
   if (input === null) return null
-}
-
-const functionParser = (input) => {
-
-}
-
-// Evaluate for expression parser result array
-function evaluate (input, count) {
-  let operation = input.shift()
-  if (count > 1) return operation(...input)
-  else return operinput(input)
+  input = spaceParsedOp(input[1])
+  input = lambdaArgumentsParser(input[1])
+  arr.push(input[0])
+  input = spaceParsedOp(input[1])
+  input = lambdaBodyParser(input[1])
+  arr.push(input[0])
+  input = closeBracketOp(input[1])
+  return [arr, input[1]]
 }
 
 // Define parser
@@ -166,7 +187,7 @@ function defineParser (input) {
   let count = 1
   input = openBracketOp(input)
   if (input === null) return null
-  input = defParser(input[1])
+  input = defineSlicerParser(input[1])
   if (input === null) return null
   arr.push(input[0])
   input = spaceParsedOp(input[1])
@@ -177,7 +198,7 @@ function defineParser (input) {
   if (input === null) return null
   input = spaceParsedOp(input[1])
   if (input === null) return null
-  input = numberParserOp(input[1]) || expressionParser(input[1])
+  input = numberParserOp(input[1]) || lambdaParser(input[1]) || expressionParser(input[1])
   if (input === null) return null
   arr.push(input[0])
   evaluate(arr, count)
@@ -192,7 +213,7 @@ function printParser (input) {
   let count = 1
   let output
   input = openBracketOp(input)
-  input = printedParser(input[1])
+  input = printSlicerParser(input[1])
   if (input === null) return null
   arr.push(input[0])
   input = spaceParsedOp(input[1])
