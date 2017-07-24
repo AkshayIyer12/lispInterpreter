@@ -28,19 +28,19 @@ const numberParserOp = (input) => {
 }
 
 /* Simple arithmetic functions */
-const add = simba => simba.reduce((accum, value) => {
+const add = input => input.reduce((accum, value) => {
   if (ENV[value]) return accum + ENV[value]
   return accum + value
 }, 0)
-const sub = simba => simba.reduce((accum, value) => {
+const sub = input => input.reduce((accum, value) => {
   if (ENV[value]) return accum - ENV[value]
   return accum - value
 })
-const mul = simba => simba.reduce((accum, value) => {
+const mul = input => input.reduce((accum, value) => {
   if (ENV[value]) return accum * ENV[value]
   return accum * value
 }, 1)
-const div = simba => simba.reduce((accum, value) => {
+const div = input => input.reduce((accum, value) => {
   if (ENV[value]) return accum / ENV[value]
   return accum / value
 })
@@ -155,9 +155,9 @@ const functionParser = (input) => {
 
 // Evaluate for expression parser result array
 function evaluate (input, count) {
-  let doga = input.shift()
-  if (count > 1) return doga(...input)
-  else return doga(input)
+  let operation = input.shift()
+  if (count > 1) return operation(...input)
+  else return operinput(input)
 }
 
 // Define parser
