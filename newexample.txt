@@ -1,1 +1,1 @@
-(define r (+ 100 (* 80 100)))(define a (+ 10 (* 4 5) 3 5 (* 3 4 (+ 6 7 9))))(define b (+ 12 302))(define k (* 30 (+ 8 9) 6))(print (+ 100 (* 80 100)))(print (+ 10 (* 4 5) 3 5 (* 3 4 (+ 6 7 9))))(print (+ 12 302))(print (* 30 (+ 8 9) 6))
+(define a (+ 10 (* 4 5) 3 5 (* 3 4 (+ 6 7 9))))(define b (+ 12 a))(define k (* 30 (+ 8 9) 6))(define square (lambda (x) (* x x)))(define add20 (lambda (x y z) (+ x (+ y (+ z 20)))))(print 10)(print (+ 10 (* 4 5) 3 5 (* 3 4 (+ 6 7 9))))(print (square 20))(print (square a))(print (add20 20 a b))

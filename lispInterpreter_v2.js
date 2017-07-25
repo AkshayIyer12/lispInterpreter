@@ -1,7 +1,6 @@
 var fs = require('fs')
 var input = fs.readFileSync('newexample.txt', 'utf-8')
 const ENV = {}
-
 // Space parser
 const spaceParsedOp = (input) => {
   let matched = input.match(/^\s+/)
@@ -119,6 +118,7 @@ const expressionParser = (input) => {
     }
     output = operatorParser(input)
     if (output) {
+      vid = ''
       result.push(output[0])
       while (true) {
         output = spaceParsedOp(output[1])
@@ -129,18 +129,27 @@ const expressionParser = (input) => {
           return [evaluate(result, count), output[1]]
         }
       }
-    }
-    else {
+    } else {
+      vid = ''
+      let env = {}
       output = identifierParsedOp(input)
       if (!output) return null
       let key = output[0]
       output = spaceParsedOp(output[1])
       output = numberParserOp(output[1])
+      console.log(output)
       let value = output[0]
       let args = 'args'
-      console.log('keyyyy', ENV[key].args[0])
-      console.log(ENV[key['args']])
-      return expressionParser(ENV[key.body])
+      let body = 'body'
+      env[ENV[key].args[0]] = value
+      env[body] = ENV[key].body
+      env[body] = env[body].replace(ENV[key].args[0], value)
+      env[body] = env[body].replace(ENV[key].args[0], value)
+      console.log(env)
+      output = (vid = closeBracketOp(output[1])) ? vid : output
+      if (output[0] === ')') {
+        return expressionParser(env[body])
+      }
     }
   }
 }
@@ -232,11 +241,13 @@ function printParser (input) {
   arr.push(input[0])
   input = spaceParsedOp(input[1])
   input = numberParserOp(input[1]) || expressionParser(input[1]) || identifierParsedOp(input[1])
-  console.log(input)
   arr.push(input[0])
   input = closeBracketOp(input[1])
   output = evaluate(arr, count)
   console.log(output[0])
+  if (input === null || input[1] === '') {
+    return null
+  }
   return input[1]
 }
 

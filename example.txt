@@ -1,3 +1,4 @@
+(define r (+ 100 (* 80 100)))
 (define a (+ 10 (* 4 5) 3 5 (* 3 4 (+ 6 7 9))))(define b (+ 12 a))
 (define k (* 30 (+ 8 9) 6))
 (define square (lambda (x) (* x x)))

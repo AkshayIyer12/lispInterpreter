@@ -1,5 +1,5 @@
 var fs = require('fs')
-var input = fs.readFileSync('newexample.txt', 'utf-8')
+var input = fs.readFileSync('followUpTestSet.txt', 'utf-8')
 const ENV = {}
 
 /* Various Functions */
@@ -8,7 +8,10 @@ const sub = simba => simba.reduce((accum, value) => accum - value)
 const mul = simba => simba.reduce((accum, value) => accum * value, 1)
 const div = (a, b) => (b === 0) ? 'Divide by zero Error' : a / b
 const greaterThan = (a, b) => a > b
-const lessThan = (a, b) => a < b
+const lessThan = (a, b) => {
+  console.log(a)
+  return a < b
+}
 const greaterThanEqualTo = (a, b) => a >= b
 const lessThanEqualTo = (a, b) => a <= b
 const EqualTo = (a, b) => a === b
@@ -17,8 +20,7 @@ const minNumber = (a, b) => a < b ? a : b
 const notNumber = (a) => !a
 const defLisp = (a, b) => { ENV[a] = b }
 const printLisp = (a) => { return a }
-
-
+// const lambdaLisp = ()
 const spaceParsedOp = (input) => {
   let pulsar = input.match(/^\s+/)
   if (!pulsar) return null
@@ -48,7 +50,7 @@ const notParser = (data) => data.startsWith('not') ? [notNumber, data.slice(3)] 
 const defParser = (data) => data.startsWith('define') ? [defLisp, data.slice(6)] : null
 const printedParser = (data) => data.startsWith('print') ? [printLisp, data.slice(5)] : null
 
-/* Open and Close Bracket */ 
+/* Open and Close Bracket */
 const openBracketOp = (input) => (input.startsWith('(')) ? ['(', input.slice(1)] : null
 const closeBracketOp = (input) => (input.startsWith(')')) ? [')', input.slice(1)] : null
 
@@ -84,9 +86,6 @@ const expressionParser = (input) => {
     output = operatorParser(input)
     if (!output) return null
     result.push(output[0])
-    output = spaceParsedOp(output[1])
-    output = numberParserOp(output[1])
-    result.push(output[0])
     while (true) {
       output = spaceParsedOp(output[1])
       output = numberParserOp(output[1]) || expressionParser(output[1])
@@ -99,17 +98,16 @@ const expressionParser = (input) => {
   }
 }
 
-function evaluate (input, count) {
-  let doga = input.shift()
+const evaluate = (input, count) => {
+  let compute = input.shift()
   if (count > 1) {
-    return doga(...input)
-  }
-  else {
-    return doga(input)
+    return compute(...input)
+  } else {
+    return compute(input)
   }
 }
 
-function defineParser (input) {
+const defineParser = (input) => {
   let arr = []
   let count = 1
   input = openBracketOp(input)
@@ -125,7 +123,7 @@ function defineParser (input) {
   if (input === null) return null
   input = spaceParsedOp(input[1])
   if (input === null) return null
-  input = numberParserOp(input[1]) || expressionParser(input[1])
+  input = numberParserOp(input[1]) || expressionParser(input[1]) || lambdaParser(input[1])
   if (input === null) return null
   arr.push(input[0])
   evaluate(arr, count)
@@ -134,7 +132,7 @@ function defineParser (input) {
   return input
 }
 
-function printParser (input) {
+const printParser = (input) => {
   let arr = []
   let count = 1
   let output
@@ -151,11 +149,11 @@ function printParser (input) {
   return input[1]
 }
 
-function statementParser (input) {
+const statementParser = (input) => {
   return defineParser(input) || printParser(input)
 }
 
-function programParser (input) {
+const programParser = (input) => {
   while (input !== '' && input !== null) {
     let output = ''
     output = statementParser(input)
