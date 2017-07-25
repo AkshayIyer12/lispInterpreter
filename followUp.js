@@ -4,26 +4,25 @@ const ENV = {}
 
 // Space parser
 const spaceParsedOp = (input) => {
-  let pulsar = input.match(/^\s+/)
-  if (!pulsar) return null
-  let pulsarLength = pulsar[0].length
-  return [null, input.slice(pulsarLength)]
+  let matched = input.match(/^\s+/)
+  if (!matched) return null
+  let matchedLength = matched[0].length
+  return [null, input.slice(matchedLength)]
 }
 
 // Identifier Parser
 const identifierParsedOp = (input) => {
-  let re = /^[a-z]+[0-9]*[a-z]*/i
-  let indica = input.match(re)
-  if (!indica) return null
-  let indicaLength = indica[0].length
-  return [indica[0], input.slice(indicaLength)]
+  let matched = input.match(/^[a-z]+[0-9]*[a-z]*/i)
+  if (!matched) return null
+  let matchedLength = matched[0].length
+  return [matched[0], input.slice(matchedLength)]
 }
 
 // Number parser
 const numberParserOp = (input) => {
-  let re = /^[0-9]+/
-  let data = re.exec(input)
-  if (data) return [parseInt(data[0]), input.slice(data[0].length)]
+  let regexp = /^[0-9]+/
+  let matched = regexp.exec(input)
+  if (matched) return [parseInt(matched[0]), input.slice(matched[0].length)]
   return null
 }
 
