@@ -83,11 +83,11 @@ const maxParser = (data) => data.startsWith('max') ? [maxNumber, data.slice(3)] 
 const minParser = (data) => data.startsWith('min') ? [minNumber, data.slice(3)] : null
 const notParser = (data) => data.startsWith('not') ? [notNumber, data.slice(3)] : null
 
-/* Define, print, if and lambda string slicer*/
+/* Define, print, if and lambda string slicer */
 const defineSlicerParser = (data) => data.startsWith('define') ? [defLisp, data.slice(6)] : null
 const ifSlicerParser = (data) => data.startsWith('if') ? [ifLisp, input.slice(2)] : null
 const printSlicerParser = (data) => data.startsWith('print') ? [printLisp, data.slice(5)] : null
-const lambdaSlicerParser = (data) => data.startsWith('lambda') ? ['lambdaLisp', data.slice(6)] : null
+const lambdaSlicerParser = (data) => data.startsWith('lambda') ? ['lambda', data.slice(6)] : null
 
 /* Finding openBracket and closeBracket */
 const openBracketOp = (input) => (input.startsWith('(')) ? ['(', input.slice(1)] : null
@@ -96,7 +96,7 @@ const closeBracketOp = (input) => (input.startsWith(')')) ? [')', input.slice(1)
 // Operator parser
 const operatorParser = (input) => {
   return (plusParser(input) || minusParser(input) || starParser(input) || slashParser(input) || greaterThanEqualToParser(input) || lessThanEqualToParser(input) || equalToParser(input) ||
-           greaterThanParser(input) || lessThanParser(input) || defineParser(input) || identifierParsedOp(input) || maxParser(input) || minParser(input) || notParser(input))
+           greaterThanParser(input) || lessThanParser(input) || defineParser(input) || maxParser(input) || minParser(input) || notParser(input))
 }
 
 // Evaluate for expression parser result array
@@ -119,16 +119,29 @@ const expressionParser = (input) => {
       count++
     }
     output = operatorParser(input)
-    if (!output) return null
-    result.push(output[0])
-    while (true) {
-      output = spaceParsedOp(output[1])
-      output = numberParserOp(output[1]) || expressionParser(output[1]) || identifierParsedOp(output[1])
+    if (output) {
       result.push(output[0])
-      output = (vid = closeBracketOp(output[1])) ? vid : output
-      if (output[0] === ')') {
-        return [evaluate(result, count), output[1]]
+      while (true) {
+        output = spaceParsedOp(output[1])
+        output = numberParserOp(output[1]) || expressionParser(output[1]) || identifierParsedOp(output[1])
+        result.push(output[0])
+        output = (vid = closeBracketOp(output[1])) ? vid : output
+        if (output[0] === ')') {
+          return [evaluate(result, count), output[1]]
+        }
       }
+    }
+    else {
+      output = identifierParsedOp(input)
+      if (!output) return null
+      let key = output[0]
+      output = spaceParsedOp(output[1])
+      output = numberParserOp(output[1])
+      let value = output[0]
+      let args = 'args'
+      console.log('keyyyy', ENV[key].args[0])
+      console.log(ENV[key['args']])
+      return expressionParser(ENV[key.body])
     }
   }
 }
@@ -165,20 +178,22 @@ const lambdaBodyParser = (input) => {
 
 // lambda Parser
 const lambdaParser = (input) => {
-  let arr = []
+  let obj = {}
+  let count = 3
   input = openBracketOp(input)
   if (input === null) return null
   input = lambdaSlicerParser(input[1])
-  arr.push(input[0])
+  if (input === null) return null
+  obj.type = input[0]
   if (input === null) return null
   input = spaceParsedOp(input[1])
   input = lambdaArgumentsParser(input[1])
-  arr.push(input[0])
+  obj.args = input[0]
   input = spaceParsedOp(input[1])
   input = lambdaBodyParser(input[1])
-  arr.push(input[0])
+  obj.body = input[0]
   input = closeBracketOp(input[1])
-  return [arr, input[1]]
+  return [obj, input[1], count]
 }
 
 // Define parser
@@ -218,6 +233,7 @@ function printParser (input) {
   arr.push(input[0])
   input = spaceParsedOp(input[1])
   input = numberParserOp(input[1]) || expressionParser(input[1]) || identifierParsedOp(input[1])
+  console.log(input)
   arr.push(input[0])
   input = closeBracketOp(input[1])
   output = evaluate(arr, count)
