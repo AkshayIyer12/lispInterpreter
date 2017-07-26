@@ -122,6 +122,7 @@ const expressionParser = (input) => {
     }
     output = operatorParser(input)
     if (output) {
+      // For Operator Operand1 Operand2
       vid = ''
       result.push(output[0])
       while (true) {
@@ -137,6 +138,7 @@ const expressionParser = (input) => {
         }
       }
     } else {
+      // For lambda parsing
       vid = ''
       let env = {}
       let arr = []
