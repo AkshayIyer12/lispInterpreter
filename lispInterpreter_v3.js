@@ -146,11 +146,13 @@ const expressionParser = (input) => {
       if (!output) return null
       let key = output[0]
       while (true) {
+        // For parsing a number
         output = spaceParsedOp(output[1])
         if (numberParserOp(output[1])) {
           output = numberParserOp(output[1])
           arr.push(output[0])
         }
+        // For parsing identifier
         if (identifierParsedOp(output[1])) {
           output = identifierParsedOp(output[1])
           if (ENV[output[0]] !== undefined) {
@@ -163,9 +165,11 @@ const expressionParser = (input) => {
       let value = output[0]
       let args = 'args'
       let body = 'body'
+      // For passing value to the key in a local object env
       for (let i = 0; i < arr.length; i++) {
         env[ENV[key].args[i]] = arr[i]
       }
+      // Replacing any occurrence of key with its value
       env[body] = ENV[key].body
       for (let i = 0; i < arr.length; i++) {
         env[body] = env[body].replace(ENV[key].args[i], env[ENV[key].args[i]])
