@@ -93,8 +93,19 @@ const closeBracketOp = (input) => (input.startsWith(')')) ? [')', input.slice(1)
 
 // Operator parser
 const operatorParser = (input) => {
-  return (plusParser(input) || minusParser(input) || starParser(input) || slashParser(input) || greaterThanEqualToParser(input) || lessThanEqualToParser(input) || equalToParser(input) ||
-           greaterThanParser(input) || lessThanParser(input) || defineParser(input) || maxParser(input) || minParser(input) || notParser(input))
+  return (plusParser(input) ||
+          minusParser(input) ||
+          starParser(input) ||
+          slashParser(input) ||
+          greaterThanEqualToParser(input) ||
+          lessThanEqualToParser(input) ||
+          equalToParser(input) ||
+          greaterThanParser(input) ||
+          lessThanParser(input) ||
+          defineParser(input) ||
+          maxParser(input) ||
+          minParser(input) ||
+          notParser(input))
 }
 
 // Evaluate for expression parser result array
@@ -117,7 +128,11 @@ const expressionParser = (input) => {
   if (!input.startsWith('(')) return null
   input = input.slice(1)
   while (true) {
-    if (input.startsWith('>') || input.startsWith('>=') || input.startsWith('<') || input.startsWith('<=') || input.startsWith('==')) {
+    if (input.startsWith('>') ||
+        input.startsWith('>=') ||
+        input.startsWith('<') ||
+        input.startsWith('<=') ||
+        input.startsWith('==')) {
       count++
     }
     output = operatorParser(input)
@@ -174,7 +189,8 @@ const expressionParser = (input) => {
       for (let i = 0; i < arr.length; i++) {
         env[body] = env[body].replace(ENV[key].args[i], env[ENV[key].args[i]])
       }
-      // env[body] = env[body].replace(ENV[key].args[0], value)
+
+      env[body] = env[body].replace(ENV[key].args[0], value)
       output = (vid = closeBracketOp(output[1])) ? vid : output
       if (output[0] === ')') {
         return [expressionParser(env[body]), output[1]]
