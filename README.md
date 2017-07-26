@@ -10,7 +10,7 @@ e.g.
 (print a)
 (print (* 20 20))
 (define square (lambda (x) (* x x)))
-(print (square 20)
+(print (square 20))
 
 MIT License
 
