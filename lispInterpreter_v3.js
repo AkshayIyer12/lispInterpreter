@@ -174,7 +174,7 @@ const expressionParser = (input) => {
       for (let i = 0; i < arr.length; i++) {
         env[body] = env[body].replace(ENV[key].args[i], env[ENV[key].args[i]])
       }
-      env[body] = env[body].replace(ENV[key].args[0], value)
+      // env[body] = env[body].replace(ENV[key].args[0], value)
       output = (vid = closeBracketOp(output[1])) ? vid : output
       if (output[0] === ')') {
         return [expressionParser(env[body]), output[1]]
