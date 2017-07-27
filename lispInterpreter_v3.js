@@ -25,6 +25,17 @@ const numberParserOp = (input) => {
   return null
 }
 
+// String Parser
+const stringParserOp = (data) => {
+  let i = 0
+  if (data[0] === '"') {
+    data = data.substring(1, data.length)
+    i = data.search('"')
+    return ([data.substring(0, i), data.slice(i + 1)])
+  }
+  return null
+}
+
 /* Simple arithmetic functions */
 const add = input => input.reduce((accum, value) => {
   if (ENV[value]) return accum + ENV[value]
@@ -83,7 +94,7 @@ const notParser = (data) => data.startsWith('not') ? [notNumber, data.slice(3)] 
 
 /* Define, print, if and lambda string slicer */
 const defineSlicerParser = (data) => data.startsWith('define') ? [defLisp, data.slice(6)] : null
-const ifSlicerParser = (data) => data.startsWith('if') ? [ifLisp, input.slice(2)] : null
+const ifSlicerParser = (data) => data.startsWith('if') ? [ifLisp, input.slice(3)] : null
 const printSlicerParser = (data) => data.startsWith('print') ? [printLisp, data.slice(5)] : null
 const lambdaSlicerParser = (data) => data.startsWith('lambda') ? ['lambda', data.slice(6)] : null
 
@@ -91,58 +102,41 @@ const lambdaSlicerParser = (data) => data.startsWith('lambda') ? ['lambda', data
 const openBracketOp = (input) => (input.startsWith('(')) ? ['(', input.slice(1)] : null
 const closeBracketOp = (input) => (input.startsWith(')')) ? [')', input.slice(1)] : null
 
-// Operator parser
-const operatorParser = (input) => {
-  return (plusParser(input) ||
-          minusParser(input) ||
-          starParser(input) ||
-          slashParser(input) ||
+// Finds all the operator
+const operatorFinder = (input) => {
+  return (plusParser(input) || minusParser(input) ||
+          starParser(input) || slashParser(input) ||
           greaterThanEqualToParser(input) ||
           lessThanEqualToParser(input) ||
-          equalToParser(input) ||
-          greaterThanParser(input) ||
-          lessThanParser(input) ||
-          defineParser(input) ||
-          maxParser(input) ||
-          minParser(input) ||
-          notParser(input))
+          equalToParser(input) || greaterThanParser(input) ||
+          lessThanParser(input) || maxParser(input) ||
+          minParser(input) || notParser(input))
 }
-
-// Evaluate for expression parser result array
-function evaluate (input, count) {
-  let operation = input.shift()
-  if (count > 1) return operation(...input)
-  else return operation(input)
-}
-
-// Expression Parser
-const expressionParser = (input) => {
+// Peforms operation related to operator
+const operatorParser = (input) => {
   let result = []
   let vid
   let count = 1
   let output
-  if (numberParserOp(input) != null) {
-    output = numberParserOp(input)
-    return output
-  }
   if (!input.startsWith('(')) return null
   input = input.slice(1)
   while (true) {
-    if (input.startsWith('>') ||
-        input.startsWith('>=') ||
-        input.startsWith('<') ||
-        input.startsWith('<=') ||
+    if (input.startsWith('>') || input.startsWith('>=') ||
+        input.startsWith('<') || input.startsWith('<=') ||
         input.startsWith('==')) {
       count++
     }
-    output = operatorParser(input)
-    if (output) {
-      // For Operator Operand1 Operand2
+    if (input.startsWith('max') || input.startsWith('min')) {
+      count++
+    }
+    output = operatorFinder(input)
+    if (output !== null) {
+    // For Operator Operand1 Operand2
       vid = ''
       result.push(output[0])
       while (true) {
         output = spaceParsedOp(output[1])
-        output = numberParserOp(output[1]) || expressionParser(output[1]) || identifierParsedOp(output[1])
+        output = expressionParser(output[1])
         result.push(output[0])
         output = (vid = closeBracketOp(output[1])) ? vid : output
         if (output[0] === ')') {
@@ -152,51 +146,22 @@ const expressionParser = (input) => {
           }
         }
       }
-    } else {
-      // For lambda parsing
-      vid = ''
-      let env = {}
-      let arr = []
-      output = identifierParsedOp(input)
-      if (!output) return null
-      let key = output[0]
-      while (true) {
-        // For parsing a number
-        output = spaceParsedOp(output[1])
-        if (numberParserOp(output[1])) {
-          output = numberParserOp(output[1])
-          arr.push(output[0])
-        }
-        // For parsing identifier
-        if (identifierParsedOp(output[1])) {
-          output = identifierParsedOp(output[1])
-          if (ENV[output[0]] !== undefined) {
-            output[0] = ENV[output[0]]
-            arr.push(output[0])
-          }
-        }
-        if (output[1].startsWith(')')) break
-      }
-      let value = output[0]
-      let args = 'args'
-      let body = 'body'
-      // For passing value to the key in a local object env
-      for (let i = 0; i < arr.length; i++) {
-        env[ENV[key].args[i]] = arr[i]
-      }
-      // Replacing any occurrence of key with its value
-      env[body] = ENV[key].body
-      for (let i = 0; i < arr.length; i++) {
-        env[body] = env[body].replace(ENV[key].args[i], env[ENV[key].args[i]])
-      }
-
-      env[body] = env[body].replace(ENV[key].args[0], value)
-      output = (vid = closeBracketOp(output[1])) ? vid : output
-      if (output[0] === ')') {
-        return [expressionParser(env[body]), output[1]]
-      }
     }
   }
+}
+
+// Evaluate for expression parser result array
+const evaluate = (input, count) => {
+  let operation = input.shift()
+  if (count > 1) return operation(...input)
+  else return operation(input)
+}
+
+// Expression Parser
+const expressionParser = (input) => {
+  return (numberParserOp(input) || stringParserOp(input) ||
+    lambdaParser(input) || identifierParsedOp(input) ||
+    operatorParser(input))
 }
 
 // Arguments Parser for lambda function
@@ -229,8 +194,8 @@ const lambdaBodyParser = (input) => {
   return [output, input]
 }
 
-// lambda Parser
-const lambdaParser = (input) => {
+// For lambda in define
+const defineLambda = (input) => {
   let obj = {}
   let count = 3
   input = openBracketOp(input)
@@ -249,8 +214,65 @@ const lambdaParser = (input) => {
   return [obj, input[1], count]
 }
 
+// For lambda in print
+const lambdaParser = (input) => {
+  // For lambda parsing
+  let vid = ''
+  let env = {}
+  let arr = []
+  let output
+  let type = 'type'
+  if (!input.startsWith('(')) return null
+  input = input.slice(1)
+  output = identifierParsedOp(input)
+  if (output === null) return null
+  if ((output[0] === 'max') || (output[0] === 'min')) return null
+  if (output === null) return null
+  if (ENV[output[0]].type === undefined) return null
+  if (!output) return null
+  let key = output[0]
+  while (true) {
+    // For parsing a number
+    output = spaceParsedOp(output[1])
+    if (numberParserOp(output[1])) {
+      output = numberParserOp(output[1])
+      arr.push(output[0])
+    }
+    // For parsing identifier
+    if (identifierParsedOp(output[1])) {
+      output = identifierParsedOp(output[1])
+      if (ENV[output[0]] !== undefined) {
+        output[0] = ENV[output[0]]
+        arr.push(output[0])
+      }
+    }
+    if (output[1].startsWith('(')) {
+      output = lambdaParser(output[1])
+      arr.push(output[0][0])
+    }
+    if (output[1].startsWith(')')) break
+  }
+  let value = output[0]
+  let args = 'args'
+  let body = 'body'
+  // For passing value to the key in a local object env
+  for (let i = 0; i < arr.length; i++) {
+    env[ENV[key].args[i]] = arr[i]
+  }
+  // Replacing any occurrence of key with its value
+  env[body] = ENV[key].body
+  for (let i = 0; i < arr.length; i++) {
+    env[body] = env[body].replace(ENV[key].args[i], env[ENV[key].args[i]])
+  }
+  env[body] = env[body].replace(ENV[key].args[0], value)
+  output = (vid = closeBracketOp(output[1])) ? vid : output
+  if (output[0] === ')') {
+    return [operatorParser(env[body]), output[1]]
+  }
+}
+
 // Define parser
-function defineParser (input) {
+const defineParser = (input) => {
   let arr = []
   let count = 1
   input = openBracketOp(input)
@@ -266,7 +288,7 @@ function defineParser (input) {
   if (input === null) return null
   input = spaceParsedOp(input[1])
   if (input === null) return null
-  input = numberParserOp(input[1]) || lambdaParser(input[1]) || expressionParser(input[1])
+  input = defineLambda(input[1]) || expressionParser(input[1])
   if (input === null) return null
   arr.push(input[0])
   evaluate(arr, count)
@@ -276,7 +298,7 @@ function defineParser (input) {
 }
 
 // Print parser
-function printParser (input) {
+const printParser = (input) => {
   let arr = []
   let count = 1
   let output
@@ -286,7 +308,11 @@ function printParser (input) {
   arr.push(input[0])
   input = spaceParsedOp(input[1])
   input = expressionParser(input[1])
-  arr.push(input[0])
+  if (ENV[input[0]]) {
+    arr.push(ENV[input[0]])
+  } else {
+    arr.push(input[0])
+  }
   input = closeBracketOp(input[1])
   output = evaluate(arr, count)
   console.log(output[0])
@@ -296,13 +322,37 @@ function printParser (input) {
   return input[1]
 }
 
+// if Parser
+const ifParser = (input) => {
+  let arr = []
+  let count = 0
+  let output = openBracketOp(input)
+  output = ifSlicerParser(output[1])
+  if (output === null) return null
+  arr.push(output[0])
+  output = spaceParsedOp(output[1])
+  output = expressionParser(output[1])
+  arr.push(output[0])
+  count++
+  output = spaceParsedOp(output[1])
+  output = expressionParser(output[1])
+  arr.push(output[0])
+  count++
+  output = spaceParsedOp(output[1])
+  output = expressionParser(output[1])
+  arr.push(output[0])
+  count++
+  output = closeBracketOp(output[1])
+  return [evaluate(arr, count), output[1]]
+}
+
 // Switching between define and print parser
-function statementParser (input) {
-  return defineParser(input) || printParser(input)
+const statementParser = (input) => {
+  return defineParser(input) || printParser(input) || ifParser(input)
 }
 
 // Input of whole data through Program parser
-function programParser (input) {
+const programParser = (input) => {
   while (input !== '' && input !== null) {
     let output = ''
     output = statementParser(input)
