@@ -104,12 +104,9 @@ const closeBracketOp = (input) => (input.startsWith(')')) ? [')', input.slice(1)
 
 // Finds all the operator
 const operatorFinder = (input) => {
-  return (plusParser(input) || minusParser(input) ||
-          starParser(input) || slashParser(input) ||
-          greaterThanEqualToParser(input) ||
-          lessThanEqualToParser(input) ||
-          equalToParser(input) || greaterThanParser(input) ||
-          lessThanParser(input) || maxParser(input) ||
+  return (plusParser(input) || minusParser(input) || starParser(input) || slashParser(input) ||
+          greaterThanEqualToParser(input) || lessThanEqualToParser(input) || equalToParser(input) ||
+          greaterThanParser(input) || lessThanParser(input) || maxParser(input) ||
           minParser(input) || notParser(input))
 }
 // Peforms operation related to operator
