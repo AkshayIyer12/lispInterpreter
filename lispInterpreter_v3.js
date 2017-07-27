@@ -1,6 +1,7 @@
 var fs = require('fs')
 var input = fs.readFileSync('newexample.txt', 'utf-8')
 const ENV = {}
+
 // Space parser
 const spaceParsedOp = (input) => {
   let matched = input.match(/^[\s\t\n]+/)
@@ -84,6 +85,7 @@ const isListLisp = (a) => {
     return false
   }
 }
+
 /* Define, Print and if operations */
 const defLisp = (a, b) => { ENV[a] = b }
 const printLisp = (a) => {
@@ -137,21 +139,14 @@ const operatorFinder = (input) => {
 }
 // Peforms operation related to operator
 const operatorParser = (input) => {
-  let result = []
-  let vid
-  let type = 'type'
-  let args = 'args'
-  let count = 1
-  let output
+  let result = [], vid, type = 'type', args = 'args', count = 1, output
   if (!input.startsWith('(')) return null
   input = input.slice(1)
   while (true) {
     if (input.startsWith('>') || input.startsWith('>=') ||
         input.startsWith('<') || input.startsWith('<=') ||
-        input.startsWith('==')) {
-      count++
-    }
-    if (input.startsWith('max') || input.startsWith('min')) {
+        input.startsWith('==') || input.startsWith('max') ||
+        input.startsWith('min')) {
       count++
     }
     output = operatorFinder(input)
@@ -198,10 +193,9 @@ const expressionParser = (input) => {
 
 // Arguments Parser for lambda function
 const lambdaArgumentsParser = (input) => {
-  let result = []
+  let result = [], output
   input = openBracketOp(input)
   input = input[1]
-  let output
   while (!input.startsWith(')')) {
     input = identifierParsedOp(input)
     result.push(input[0])
@@ -213,9 +207,7 @@ const lambdaArgumentsParser = (input) => {
 
 // Body Parser for lambda function
 const lambdaBodyParser = (input) => {
-  let count = 0
-  let k = 0
-  let output = ''
+  let count = 0, k = 0, output = ''
   do {
     if (input[k] === '(') count++
     if (input[k] === ')') count--
@@ -228,14 +220,12 @@ const lambdaBodyParser = (input) => {
 
 // For lambda in define
 const defineLambda = (input) => {
-  let obj = {}
-  let count = 3
+  let obj = {}, count = 3
   input = openBracketOp(input)
   if (input === null) return null
   input = lambdaSlicerParser(input[1])
   if (input === null) return null
   obj.type = input[0]
-  if (input === null) return null
   input = spaceParsedOp(input[1])
   input = lambdaArgumentsParser(input[1])
   obj.args = input[0]
@@ -245,25 +235,23 @@ const defineLambda = (input) => {
   input = closeBracketOp(input[1])
   return [obj, input[1], count]
 }
-
+const checker = (output) => {
+  if ((output[0] === 'list') || (output[0] === 'max') || (output[0] === 'min') ||
+   (output[0] === 'car') || (output[0] === 'cdr') || (output[0] === 'cons') ||
+   (output[0] === 'isList')) {
+    return null
+  }
+}
 // For lambda in print
 const lambdaParser = (input) => {
   // For lambda parsing
-  let vid = ''
-  let env = {}
-  let arr = []
-  let output
-  let type = 'type'
+  let vid = '', env = {}, arr = [], output, type = 'type'
   if (!input.startsWith('(')) return null
   input = input.slice(1)
   output = identifierParsedOp(input)
   if (output === null) return null
-  if (output[0] === 'list') return null
-  if ((output[0] === 'max') || (output[0] === 'min')) return null
-  if ((output[0] === 'car') || (output[0] === 'cdr') || (output[0] === 'cons') || (output[0] === 'isList')) return null
-  if (output === null) return null
+  if (checker(output) === null) return null
   if (ENV[output[0]].type === undefined) return null
-  if (!output) return null
   let key = output[0]
   while (true) {
     // For parsing a number
@@ -286,9 +274,7 @@ const lambdaParser = (input) => {
     }
     if (output[1].startsWith(')')) break
   }
-  let value = output[0]
-  let args = 'args'
-  let body = 'body'
+  let value = output[0], args = 'args', body = 'body'
   // For passing value to the key in a local object env
   for (let i = 0; i < arr.length; i++) {
     env[ENV[key].args[i]] = arr[i]
@@ -299,6 +285,7 @@ const lambdaParser = (input) => {
     env[body] = env[body].replace(ENV[key].args[i], env[ENV[key].args[i]])
   }
   env[body] = env[body].replace(ENV[key].args[0], value)
+  env[body] = env[body].replace(ENV[key].args[0], value)
   output = (vid = closeBracketOp(output[1])) ? vid : output
   if (output[0] === ')') {
     return [operatorParser(env[body]), output[1]]
@@ -307,23 +294,17 @@ const lambdaParser = (input) => {
 
 // Define parser
 const defineParser = (input) => {
-  let arr = []
-  let count = 1
+  let arr = [], count = 1
   input = openBracketOp(input)
-  if (input === null) return null
   input = defineSlicerParser(input[1])
   if (input === null) return null
   arr.push(input[0])
   input = spaceParsedOp(input[1])
-  if (input === null) return null
   count++
   input = identifierParsedOp(input[1])
   arr.push(input[0])
-  if (input === null) return null
   input = spaceParsedOp(input[1])
-  if (input === null) return null
   input = defineLambda(input[1]) || expressionParser(input[1])
-  if (input === null) return null
   arr.push(input[0])
   evaluate(arr, count)
   input = closeBracketOp(input[1])
@@ -333,9 +314,7 @@ const defineParser = (input) => {
 
 // Print parser
 const printParser = (input) => {
-  let arr = []
-  let count = 1
-  let output
+  let arr = [], count = 1, output
   input = openBracketOp(input)
   input = printSlicerParser(input[1])
   if (input === null) return null
@@ -358,33 +337,24 @@ const printParser = (input) => {
 
 // if Parser
 const ifParser = (input) => {
-  let arr = []
-  let count = 0
-  let output = openBracketOp(input)
-  if (output === null) return null
+  let arr = [], count = 0, output
+  output = openBracketOp(input)
   output = ifSlicerParser(output[1])
   if (output === null) return null
   arr.push(output[0])
   output = spaceParsedOp(output[1])
-  if (output === null) return null
   output = expressionParser(output[1])
-  if (output === null) return null
   arr.push(output[0])
   count++
   output = spaceParsedOp(output[1])
-  if (output === null) return null
   output = expressionParser(output[1])
-  if (output === null) return null
   arr.push(output[0])
   count++
   output = spaceParsedOp(output[1])
-  if (output === null) return null
   output = expressionParser(output[1])
-  if (output === null) return null
   arr.push(output[0])
   count++
   output = closeBracketOp(output[1])
-  if (input === null) return null
   console.log(evaluate(arr, count))
   return output[1]
 }
@@ -404,8 +374,7 @@ const programParser = (input) => {
     } else {
       input = output[1]
     }
-    output = statementParser(input)
-    input = output
+    input = statementParser(input)
   }
   return ENV
 }
