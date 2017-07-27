@@ -66,6 +66,24 @@ const notNumber = (a) => !a
 const maxNumber = (a, b) => a > b ? a : b
 const minNumber = (a, b) => a < b ? a : b
 
+/* List Operations */
+const listCall = (a) => { return { type: 'list', args: a } }
+const listCar = (a) => a[0].shift()
+const listCdr = (a) => {
+  a[0].shift()
+  return a[0]
+}
+const listCons = (a) => {
+  a[1].unshift(a[0])
+  return a[1]
+}
+const isListLisp = (a) => {
+  if (Array.isArray(a)) {
+    return true
+  } else {
+    return false
+  }
+}
 /* Define, Print and if operations */
 const defLisp = (a, b) => { ENV[a] = b }
 const printLisp = (a) => {
@@ -87,10 +105,17 @@ const greaterThanEqualToParser = (data) => data.startsWith('>=') ? [greaterThanE
 const lessThanEqualToParser = (data) => data.startsWith('<=') ? [lessThanEqualTo, data.slice(2)] : null
 const equalToParser = (data) => data.startsWith('==') ? [EqualTo, data.slice(2)] : null
 
-/* Finding Max, Min and Not string */
+/* Finding max, min, not and list string */
 const maxParser = (data) => data.startsWith('max') ? [maxNumber, data.slice(3)] : null
 const minParser = (data) => data.startsWith('min') ? [minNumber, data.slice(3)] : null
 const notParser = (data) => data.startsWith('not') ? [notNumber, data.slice(3)] : null
+
+// Finding list operations car, cdr, cons, isList
+const listParser = (data) => data.startsWith('list') ? [listCall, data.slice(4)] : null
+const carList = (data) => data.startsWith('car') ? [listCar, data.slice(3)] : null
+const cdrList = (data) => data.startsWith('cdr') ? [listCdr, data.slice(3)] : null
+const consList = (data) => data.startsWith('cons') ? [listCons, data.slice(4)] : null
+const isListIden = (data) => data.startsWith('isList') ? [isListLisp, data.slice(6)] : null
 
 /* Define, print, if and lambda string slicer */
 const defineSlicerParser = (data) => data.startsWith('define') ? [defLisp, data.slice(6)] : null
@@ -107,12 +132,15 @@ const operatorFinder = (input) => {
   return (plusParser(input) || minusParser(input) || starParser(input) || slashParser(input) ||
           greaterThanEqualToParser(input) || lessThanEqualToParser(input) || equalToParser(input) ||
           greaterThanParser(input) || lessThanParser(input) || maxParser(input) ||
-          minParser(input) || notParser(input))
+          minParser(input) || notParser(input) || listParser(input) || carList(input) ||
+          cdrList(input) || consList(input) || isListIden(input))
 }
 // Peforms operation related to operator
 const operatorParser = (input) => {
   let result = []
   let vid
+  let type = 'type'
+  let args = 'args'
   let count = 1
   let output
   if (!input.startsWith('(')) return null
@@ -134,7 +162,15 @@ const operatorParser = (input) => {
       while (true) {
         output = spaceParsedOp(output[1])
         output = expressionParser(output[1])
-        result.push(output[0])
+        if (ENV[output[0]]) {
+          if (ENV[output[0]].args) {
+            result.push(ENV[output[0]].args)
+          } else {
+            result.push(ENV[output[0]])
+          }
+        } else {
+          result.push(output[0])
+        }
         output = (vid = closeBracketOp(output[1])) ? vid : output
         if (output[0] === ')') {
           if (output[1] === '') return [evaluate(result, count)]
@@ -157,8 +193,7 @@ const evaluate = (input, count) => {
 // Expression Parser
 const expressionParser = (input) => {
   return (numberParserOp(input) || stringParserOp(input) ||
-    lambdaParser(input) || identifierParsedOp(input) ||
-    operatorParser(input))
+    lambdaParser(input) || identifierParsedOp(input) || operatorParser(input))
 }
 
 // Arguments Parser for lambda function
@@ -223,7 +258,9 @@ const lambdaParser = (input) => {
   input = input.slice(1)
   output = identifierParsedOp(input)
   if (output === null) return null
+  if (output[0] === 'list') return null
   if ((output[0] === 'max') || (output[0] === 'min')) return null
+  if ((output[0] === 'car') || (output[0] === 'cdr') || (output[0] === 'cons') || (output[0] === 'isList')) return null
   if (output === null) return null
   if (ENV[output[0]].type === undefined) return null
   if (!output) return null
