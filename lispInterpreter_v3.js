@@ -94,7 +94,7 @@ const notParser = (data) => data.startsWith('not') ? [notNumber, data.slice(3)] 
 
 /* Define, print, if and lambda string slicer */
 const defineSlicerParser = (data) => data.startsWith('define') ? [defLisp, data.slice(6)] : null
-const ifSlicerParser = (data) => data.startsWith('if') ? [ifLisp, input.slice(3)] : null
+const ifSlicerParser = (data) => data.startsWith('if') ? [ifLisp, data.slice(2)] : null
 const printSlicerParser = (data) => data.startsWith('print') ? [printLisp, data.slice(5)] : null
 const lambdaSlicerParser = (data) => data.startsWith('lambda') ? ['lambda', data.slice(6)] : null
 
@@ -324,23 +324,32 @@ const ifParser = (input) => {
   let arr = []
   let count = 0
   let output = openBracketOp(input)
+  if (output === null) return null
   output = ifSlicerParser(output[1])
   if (output === null) return null
   arr.push(output[0])
   output = spaceParsedOp(output[1])
+  if (output === null) return null
   output = expressionParser(output[1])
+  if (output === null) return null
   arr.push(output[0])
   count++
   output = spaceParsedOp(output[1])
+  if (output === null) return null
   output = expressionParser(output[1])
+  if (output === null) return null
   arr.push(output[0])
   count++
   output = spaceParsedOp(output[1])
+  if (output === null) return null
   output = expressionParser(output[1])
+  if (output === null) return null
   arr.push(output[0])
   count++
   output = closeBracketOp(output[1])
-  return [evaluate(arr, count), output[1]]
+  if (input === null) return null
+  console.log(evaluate(arr, count))
+  return output[1]
 }
 
 // Switching between define and print parser
