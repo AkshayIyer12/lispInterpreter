@@ -3,7 +3,7 @@ var input = fs.readFileSync('newexample.txt', 'utf-8')
 const ENV = {}
 // Space parser
 const spaceParsedOp = (input) => {
-  let matched = input.match(/^\s+/)
+  let matched = input.match(/^[\s\t\n]+/)
   if (!matched) return null
   let matchedLength = matched[0].length
   return [null, input.slice(matchedLength)]
@@ -396,8 +396,14 @@ const statementParser = (input) => {
 
 // Input of whole data through Program parser
 const programParser = (input) => {
+  let output = ''
   while (input !== '' && input !== null) {
-    let output = ''
+    output = spaceParsedOp(input)
+    if (output === null) {
+      output = input
+    } else {
+      input = output[1]
+    }
     output = statementParser(input)
     input = output
   }
