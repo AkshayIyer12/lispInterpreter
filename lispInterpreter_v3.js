@@ -129,14 +129,18 @@ const lambdaSlicerParser = (data) => data.startsWith('lambda') ? ['lambda', data
 const openBracketOp = (input) => (input.startsWith('(')) ? ['(', input.slice(1)] : null
 const closeBracketOp = (input) => (input.startsWith(')')) ? [')', input.slice(1)] : null
 
-// Finds all the operator
-const operatorFinder = (input) => {
-  return (plusParser(input) || minusParser(input) || starParser(input) || slashParser(input) ||
-          greaterThanEqualToParser(input) || lessThanEqualToParser(input) || equalToParser(input) ||
-          greaterThanParser(input) || lessThanParser(input) || maxParser(input) ||
-          minParser(input) || notParser(input) || listParser(input) || carList(input) ||
-          cdrList(input) || consList(input) || isListIden(input))
+// Parser Factory
+const parserFactory = (...parsers) => (input) => {
+  for (let parser of parsers) {
+    let output = parser(input)
+    if (output !== null) return output
+  }
+  return null
 }
+
+// Finds all the operator
+const operatorFinder = (input) => parserFactory(plusParser, minusParser, starParser, slashParser, greaterThanEqualToParser, lessThanEqualToParser, equalToParser, greaterThanParser, lessThanParser, maxParser, minParser, notParser, listParser, carList, cdrList, consList, isListIden)(input)
+
 // Peforms operation related to operator
 const operatorParser = (input) => {
   let result = [], vid, type = 'type', args = 'args', count = 1, output
@@ -186,10 +190,7 @@ const evaluate = (input, count) => {
 }
 
 // Expression Parser
-const expressionParser = (input) => {
-  return (numberParsed(input) || stringParser(input) ||
-    lambdaParser(input) || identifierParsed(input) || operatorParser(input))
-}
+const expressionParser = (input) => parserFactory(numberParsed, stringParser, lambdaParser, identifierParsed, operatorParser)(input)
 
 // Arguments Parser for lambda function
 const lambdaArgumentsParser = (input) => {
@@ -360,9 +361,7 @@ const ifParser = (input) => {
 }
 
 // Switching between define and print parser
-const statementParser = (input) => {
-  return defineParser(input) || printParser(input) || ifParser(input)
-}
+const statementParser = (input) => parserFactory(defineParser, printParser, ifParser)(input)
 
 // Input of whole data through Program parser
 const programParser = (input) => {
