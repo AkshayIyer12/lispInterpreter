@@ -138,6 +138,16 @@ const parserFactory = (...parsers) => (input) => {
   return null
 }
 
+const allParser = (...parsers) => (input) => {
+  let result = []
+  for (let parser of parsers) {
+    let output = parser(input)
+    if (output === null) return null
+    result.push(output[0])
+    input = output[1]
+  }
+  return [result, input]
+}
 // Finds all the operator
 const operatorFinder = (input) => parserFactory(plusParser, minusParser, starParser, slashParser, greaterThanEqualToParser, lessThanEqualToParser, equalToParser, greaterThanParser, lessThanParser, maxParser, minParser, notParser, listParser, carList, cdrList, consList, isListIden)(input)
 
@@ -296,68 +306,55 @@ const lambdaParser = (input) => {
 // Define parser
 const defineParser = (input) => {
   let arr = [], count = 1
-  input = openBracketOp(input)
-  input = defineSlicerParser(input[1])
-  if (input === null) return null
-  arr.push(input[0])
-  input = spaceParsed(input[1])
-  count++
-  input = identifierParsed(input[1])
-  arr.push(input[0])
-  input = spaceParsed(input[1])
-  input = defineLambda(input[1]) || expressionParser(input[1])
-  arr.push(input[0])
+  let output = allParser(openBracketOp, defineSlicerParser, spaceParsed, 
+  						identifierParsed, spaceParsed)(input)
+  if (output === null) return null
+  let [[ , def, , iden], rest] = output
+  input = rest
+  output = defineLambda(input)
+  if (output === null)  output = expressionParser(input)
+  let [val1, val2] = output
+  arr.push(def, iden, val1)
+  count += 3
   evaluate(arr, count)
-  input = closeBracketOp(input[1])
-  input = input[1]
-  return input
+  input = closeBracketOp(val2)
+  return input[1]
 }
 
 // Print parser
 const printParser = (input) => {
-  let arr = [], count = 1, output
-  input = openBracketOp(input)
-  input = printSlicerParser(input[1])
-  if (input === null) return null
-  arr.push(input[0])
-  input = spaceParsed(input[1])
-  input = expressionParser(input[1])
-  if (ENV[input[0]]) {
-    arr.push(ENV[input[0]])
+  let arr = [], count = 1
+  let output = allParser(openBracketOp, printSlicerParser, spaceParsed,
+  						expressionParser, closeBracketOp)(input)
+  if (output === null) return null
+  let [[, pri, ,exp], rest] = output
+  arr.push(pri)
+  if (ENV[exp]) {
+    arr.push(ENV[exp])
   } else {
-    arr.push(input[0])
+    arr.push(exp)
   }
-  input = closeBracketOp(input[1])
   output = evaluate(arr, count)
-  console.log(output[0])
-  if (input === null || input[1] === '') {
+  console.log('Evaluate to ' + output[0])
+  if (rest === null) {
     return null
   }
-  return input[1]
+  return rest
 }
 
 // if Parser
 const ifParser = (input) => {
-  let arr = [], count = 0, output
-  output = openBracketOp(input)
-  output = ifSlicerParser(output[1])
+  let arr = [], count = 0
+  let output = allParser(openBracketOp, ifSlicerParser, spaceParsed, expressionParser,
+  						spaceParsed, expressionParser, spaceParsed,
+  						expressionParser, closeBracketOp)(input)
   if (output === null) return null
-  arr.push(output[0])
-  output = spaceParsed(output[1])
-  output = expressionParser(output[1])
-  arr.push(output[0])
-  count++
-  output = spaceParsed(output[1])
-  output = expressionParser(output[1])
-  arr.push(output[0])
-  count++
-  output = spaceParsed(output[1])
-  output = expressionParser(output[1])
-  arr.push(output[0])
-  count++
-  output = closeBracketOp(output[1])
-  console.log(evaluate(arr, count))
-  return output[1]
+  let [[,ifSP, ,test, ,conseq, ,alt], rest] = output
+  arr.push(ifSP, test, conseq, alt)
+  count +=3
+  output = evaluate(arr, count)
+  console.log('Evaluate to ' + output)
+  return rest
 }
 
 // Switching between define and print parser
