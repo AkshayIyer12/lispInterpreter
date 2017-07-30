@@ -40,8 +40,8 @@ const printLisp = (a) => (ENV[a]) ? console.log(ENV[a]) : a
 const ifLisp = (a, b, c) => a ? b : c
 const plusParser = (data) => data.startsWith('+') ? [add, data.slice(1)] : null
 const minusParser = (data) => data.startsWith('-') ? [sub, data.slice(1)] : null
-const starParser = (data) => data.startsWith('*') ? [mul, data.slice(1)] : null
-const slashParser = (data) => data.startsWith('/') ? [div, data.slice(1)] : null
+const mulParser = (data) => data.startsWith('*') ? [mul, data.slice(1)] : null
+const divParser = (data) => data.startsWith('/') ? [div, data.slice(1)] : null
 const greaterThanParser = (data) => data.startsWith('>') ? [greaterThan, data.slice(1)] : null
 const lessThanParser = (data) => data.startsWith('<') ? [lessThan, data.slice(1)] : null
 const greaterThanEqualToParser = (data) => data.startsWith('>=') ? [greaterThanEqualTo, data.slice(2)] : null
@@ -78,8 +78,8 @@ const allParser = (...parsers) => (input) => {
   }
   return [result, input]
 }
-const operatorFinder = (input) => parserFactory(plusParser, minusParser, starParser,
-  slashParser, greaterThanEqualToParser, lessThanEqualToParser, equalToParser,
+const operatorFinder = (input) => parserFactory(plusParser, minusParser, mulParser,
+  divParser, greaterThanEqualToParser, lessThanEqualToParser, equalToParser,
   greaterThanParser, lessThanParser, maxParser, minParser, notParser, listParser,
   carList, cdrList, consList, isListIden)(input)
 const operatorParser = (input) => {
@@ -165,10 +165,8 @@ const lambdaParser = (input) => {
   if (!input.startsWith('(')) return null
   input = input.slice(1)
   let output = identifierParser(input)
-  if (output === null) return null
-  if (checker(output) === null) return null
-  let type = 'type'
-  if (ENV[output[0]].type === undefined) return null
+    let type = 'type'
+  if ((output === null) || (checker(output) === null) || (ENV[output[0]].type === undefined)) return null
   let key = output[0], arr = []
   while (!output[1].startsWith(')')) {
     output = spaceParser(output[1])
