@@ -1,6 +1,6 @@
 var input = require('fs').readFileSync('newexample.txt', 'utf-8')
 const ENV = {}
-let mat, regexp = /^[0-9]+/, output
+let mat, regexp = /^[0-9]+/, output, key
 
 const skipSpaces = (input) => (mat = input.match(/^[\s\t\n]+/)) ? [mat[0], input.slice(mat[0].length)] : null
 const findIdentifier = (input) => (mat = input.match(/^[a-z]+[0-9]*[a-z]*/i)) ? [mat[0], input.slice(mat[0].length)] : null
@@ -67,9 +67,9 @@ const findLambda = (data) => data.startsWith('lambda') ? ['lambda', data.slice(6
 const findOpenBracket = (input) => (input.startsWith('(')) ? ['(', input.slice(1)] : null
 const findCloseBracket = (input) => (input.startsWith(')')) ? [')', input.slice(1)] : null
 
-const parserFactory = (...parsers) => (input) => {
+const parserFactory = (...parsers) => (input, key) => {
   for (let parser of parsers) {
-    let output = parser(input)
+    let output = parser(input, key)
     if (output !== null) return output
   }
   return null
@@ -91,7 +91,7 @@ const findOperator = (input) => parserFactory(findPlus, findMinus, findMult,
   findGT, findLT, findMax, findMin, findNot, findList,
   findCar, findCdr, findCons, findIsList)(input)
 
-const parseOperators = (input) => {
+const parseOperators = (input, key) => {
   let count = 1
   if (!input.startsWith('(')) return null
   input = input.slice(1)
@@ -103,14 +103,21 @@ const parseOperators = (input) => {
   }
   let output = findOperator(input)
   if (output === null) return null
-  let result = [], vid = '', args = 'args'
+  let result = [], vid = '', env = 'env', type = 'type', args = 'args'
   result.push(output[0])
   while (output[0] !== ')') {
     output = skipSpaces(output[1])
-    output = parseExpression(output[1])
-    if (ENV[output[0]]) {
-      (ENV[output[0]].args) ? result.push(ENV[output[0]].args) : result.push(ENV[output[0]])
-    } else {
+    output = parseExpression(output[1], key)
+    if (key !== undefined && ENV[key].type === 'lambda' && ENV[key].env[output[0]] !== undefined) {
+      result.push(ENV[key].env[output[0]])
+    }
+    else if (ENV[output[0]] !== undefined && ENV[output[0]].type === 'list') {
+      result.push(ENV[output[0]].args)
+    }
+    else if (ENV[output[0]]) {
+      result.push(ENV[output[0]])
+    }
+    else {
       result.push(output[0])
     }
     output = (vid = findCloseBracket(output[1])) ? vid : output
@@ -130,8 +137,8 @@ const applyFunction = (input, count) => {
   else return operation(input)
 }
 
-const parseExpression = (input) => parserFactory(findNumber, findString,
-  parseLambda, findIdentifier, parseOperators)(input)
+const parseExpression = (input, key) => parserFactory(findNumber, findString,
+  parseLambda, findIdentifier, parseOperators)(input, key)
 
 const findLambdaArguments = (input) => {
   let result = [], output
@@ -164,56 +171,49 @@ const defineLambda = (input) => {
     skipSpaces, findLambdaBody, findCloseBracket)(input)
   if (output === null) return null
   let [[, Type, , Args, , Body], rest] = output
-  obj.type = Type, obj.args = Args, obj.body = Body
+  obj.type = Type, obj.args = Args, obj.body = Body, obj.env = {}
   return [obj, rest, count]
-}
-
-const checker = (output) => {
-  if ((output[0] === 'list') || (output[0] === 'max') || (output[0] === 'min') ||
-   (output[0] === 'car') || (output[0] === 'cdr') || (output[0] === 'cons') ||
-   (output[0] === 'isList')) {
-    return null
-  }
 }
 
 const parseLambda = (input) => {
   if (!input.startsWith('(')) return null
   input = input.slice(1)
   let output = findIdentifier(input)
+  if (output === null || ENV[output[0]] === undefined) return null
   let type = 'type'
-  if ((output === null) || (checker(output) === null) || (ENV[output[0]].type === undefined)) return null
-  let key = output[0], arr = []
-  while (!output[1].startsWith(')')) {
-    output = skipSpaces(output[1])
-    if (findNumber(output[1])) {
-      output = findNumber(output[1])
-      arr.push(output[0])
-    }
-    if (findIdentifier(output[1])) {
-      output = findIdentifier(output[1])
-      if (ENV[output[0]] !== undefined) {
-        output[0] = ENV[output[0]]
+  if (ENV[output[0]].type === 'lambda') {
+    let key = output[0], arr = []
+    while (!output[1].startsWith(')')) {
+      output = skipSpaces(output[1])
+      if (findNumber(output[1])) {
+        output = findNumber(output[1])
         arr.push(output[0])
       }
+      if (findIdentifier(output[1])) {
+        output = findIdentifier(output[1])
+        if (ENV[output[0]] !== undefined) {
+          output[0] = ENV[output[0]]
+          arr.push(output[0])
+        }
+      }
+      if (output[1].startsWith('(')) {
+        output = parseLambda(output[1])
+        arr.push(output[0][0])
+      }
     }
-    if (output[1].startsWith('(')) {
-      output = parseLambda(output[1])
-      arr.push(output[0][0])
+    let value = output[0], args = 'args', body = 'body', env = {}
+    for (let i = 0; i < arr.length; i++) {
+      env[ENV[key].args[i]] = arr[i]
     }
-  }
-  let value = output[0], args = 'args', body = 'body', env = {}
-  for (let i = 0; i < arr.length; i++) {
-    env[ENV[key].args[i]] = arr[i]
-  }
-  env[body] = ENV[key].body
-  for (let i = 0; i < arr.length; i++) {
-    env[body] = env[body].replace(ENV[key].args[i], env[ENV[key].args[i]])
-  }
-  env[body] = env[body].replace(ENV[key].args[0], value)
-  env[body] = env[body].replace(ENV[key].args[0], value)
-  output = (vid = findCloseBracket(output[1])) ? vid : output
-  if (output[0] === ')') {
-    return [parseOperators(env[body]), output[1]]
+    ENV[key].env = env
+    env = {}
+    output = (vid = findCloseBracket(output[1])) ? vid : output
+    if (output[0] === ')') {
+      return [parseOperators(ENV[key].body, key), output[1]]
+    }
+  } else {
+    console.log(output[0])
+    return null
   }
 }
 
@@ -225,7 +225,6 @@ const parseDefine = (input) => {
   let [[ , defineFunc, , iden], rest] = output
   input = rest
   output = (output = defineLambda(input)) ? output : parseExpression(input)
-  // if (output === null) output = parseExpression(input)
   let [val1, val2] = output
   arr.push(defineFunc, iden, val1)
   applyFunction(arr, count + 3)
