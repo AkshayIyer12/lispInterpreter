@@ -1,10 +1,10 @@
 var input = require('fs').readFileSync('newexample.txt', 'utf-8')
 const ENV = {}
-let mat, regexp = /^[0-9]+/, output, key
+let mat, regexp = /^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?/, output
 
 const skipSpaces = (input) => (mat = input.match(/^[\s\t\n]+/)) ? [mat[0], input.slice(mat[0].length)] : null
 const findIdentifier = (input) => (mat = input.match(/^[a-z]+[0-9]*[a-z]*/i)) ? [mat[0], input.slice(mat[0].length)] : null
-const findNumber = (input) => (mat = regexp.exec(input)) ? [parseInt(mat[0]), input.slice(mat[0].length)] : null
+const findNumber = (input) => (mat = regexp.exec(input)) ? [parseFloat(mat[0]), input.slice(mat[0].length)] : null
 const findString = (data) => {
   if (data[0] === '"') {
     data = data.substring(1, data.length)
@@ -17,7 +17,7 @@ const findString = (data) => {
 const add = input => input.reduce((accum, value) => (ENV[value]) ? accum + ENV[value] : accum + value, 0)
 const sub = input => input.reduce((accum, value) => (ENV[value]) ? accum - ENV[value] : accum - value)
 const mul = input => input.reduce((accum, value) => (ENV[value]) ? accum * ENV[value] : accum * value, 1)
-const div = input => input.reduce((accum, value) => (ENV[value]) ? accum / ENV[value] : accum / value)
+const div = input => input.reduce((accum, value) => (ENV[value]) ? (accum / ENV[value]) : (accum / value))
 const gt = (a, b) => a > b
 const lt = (a, b) => a < b
 const gteq = (a, b) => a >= b
@@ -95,7 +95,8 @@ const parseOperators = (input, key) => {
   let count = 1
   if (!input.startsWith('(')) return null
   input = input.slice(1)
-  if (findGT(input) || findGTEQ(input) || findLT(input) || findLTEQ(input) || findEQ(input) || findMax(input) || findMin(input)) count++
+  if (findGT(input) || findGTEQ(input) || findLT(input) || findLTEQ(input) || findEQ(input) || 
+      findMax(input) || findMin(input)) count++
   let result = [], vid = ''
   let output = (vid = findOperator(input)) ? vid : null
   result.push(output[0])
@@ -116,8 +117,9 @@ const findType = (input, key) => {
   if (ENV[input[0]] !== undefined && ENV[input[0]].type === 'list') return ENV[input[0]].args
   if (key !== undefined && ENV[key].type === 'lambda' && ENV[key].env[input[0]] !== undefined) return ENV[key].env[input[0]]
   if (ENV[input[0]]) return ENV[input[0]]
-  else
+  else {
     return input[0]
+  }
 }
 const applyFunction = (input, count) => {
   let operation = input.shift()
@@ -162,48 +164,46 @@ const defineLambda = (input) => {
   obj.type = Type, obj.args = Args, obj.body = Body, obj.env = {}
   return [obj, rest, count]
 }
-const checkNumIden = (input) => {
-  
+const findIdenNum = (output, arr) => {
+  while (!output[1].startsWith(')')) {
+    output = skipSpaces(output[1])
+    if (findNumber(output[1])) {
+      output = findNumber(output[1])
+      arr.push(output[0])
+    }
+    if (findIdentifier(output[1])) {
+      output = findIdentifier(output[1])
+      if (ENV[output[0]] !== undefined) {
+        output[0] = ENV[output[0]]
+        arr.push(output[0])
+      }
+    }
+    if (output[1].startsWith('(')) {
+      output = parseLambda(output[1])
+      arr.push(output[0][0])
+    }
+  }
+  return [arr, output[1]]
 }
 const parseLambda = (input) => {
-  if (!input.startsWith('(')) return null
-  input = input.slice(1)
+  input = (input = findOpenBracket(input)) ? input[1] : null
+  if (input === null) return null
   let output = findIdentifier(input)
-  if (output === null || ENV[output[0]] === undefined) return null
+  if (output === null || ENV[output[0]] === undefined || output[0] === 'if') return null
   let type = 'type'
   if (ENV[output[0]].type === 'lambda') {
     let key = output[0], arr = []
-    while (!output[1].startsWith(')')) {
-      output = skipSpaces(output[1])
-        if (findNumber(output[1])) {
-        output = findNumber(output[1])
-        arr.push(output[0])
-      }
-     if (findIdentifier(output[1])) {
-        output = findIdentifier(output[1])
-        if (ENV[output[0]] !== undefined) {
-          output[0] = ENV[output[0]]
-          arr.push(output[0])
-        }
-    }
-     if (output[1].startsWith('(')) {
-        output = parseLambda(output[1])
-        arr.push(output[0][0])
-      }
-    }
-    let value = output[0], args = 'args', body = 'body', env = {}
+    output = findIdenNum(output, arr)
+    let args = 'args', body = 'body', env = {}
     for (let i = 0; i < arr.length; i++) {
       env[ENV[key].args[i]] = arr[i]
     }
     ENV[key].env = env
     env = {}
-    output = (vid = findCloseBracket(output[1])) ? vid : output
+    output = (args = findCloseBracket(output[1])) ? args : output
     if (output[0] === ')') {
       return [parseOperators(ENV[key].body, key), output[1]]
     }
-  } else {
-    console.log(output[0])
-    return null
   }
 }
 
@@ -236,7 +236,8 @@ const parsePrint = (input) => {
 
 const parseIf = (input) => {
   let arr = [], count = 0
-  let output = allParser(findOpenBracket, findIf, skipSpaces, parseExpression, skipSpaces, parseExpression, skipSpaces, parseExpression, findCloseBracket)(input)
+  let output = allParser(findOpenBracket, findIf, skipSpaces, parseExpression, skipSpaces,
+   parseExpression, skipSpaces, parseExpression, findCloseBracket)(input)
   if (output === null) return null
   let [[, ifFun, , test, , conseq, , alt], rest] = output
   arr.push(ifFun, test, conseq, alt)
@@ -254,5 +255,4 @@ const parseProgram = (input) => {
   }
   return ENV
 }
-
 console.log((output = parseProgram(input)) ? output : 'Error')
