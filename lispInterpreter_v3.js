@@ -1,6 +1,16 @@
-var input = require('fs').readFileSync('newexample.txt', 'utf-8')
+const readline = require('readline')
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  prompt: '>'
+})
+rl.on('line', (line) => {
+  console.log(parseProgram(line))
+}).on('close', () => {
+  process.exit(0)
+})
 const ENV = {}
-let mat, regexp = /^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?/, output
+let mat, regexp = /^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?/
 
 const skipSpaces = (input) => (mat = input.match(/^[\s\t\n]+/)) ? [mat[0], input.slice(mat[0].length)] : null
 const findIdentifier = (input) => (mat = input.match(/^[a-z]+[0-9]*[a-z]*/i)) ? [mat[0], input.slice(mat[0].length)] : null
@@ -66,14 +76,7 @@ const findLambda = (data) => data.startsWith('lambda') ? ['lambda', data.slice(6
 const findOpenBracket = (input) => (input.startsWith('(')) ? ['(', input.slice(1)] : null
 const findCloseBracket = (input) => (input.startsWith(')')) ? [')', input.slice(1)] : null
 
-// parsers.reduce((accum, parser) => parser(input, key))
-const parserFactory = (...parsers) => (input, key) => {
-  for (let parser of parsers) {
-    let output = parser(input, key)
-    if (output !== null) return output
-  }
-  return null
-}
+const parserFactory = (...parsers) => (input, key) => parsers.reduce((accum, parser) => (accum === null) ? parser(input, key) : accum, null)
 
 const allParser = (...parsers) => (input) => {
   let result = []
@@ -113,7 +116,6 @@ const parseOperators = (input, key) => {
 }
 
 const findType = (input, key) => {
-  let type = 'type'
   if (ENV[input[0]] !== undefined && ENV[input[0]].type === 'list') return ENV[input[0]].args
   if (key !== undefined && ENV[key].type === 'lambda' && ENV[key].env[input[0]] !== undefined) return ENV[key].env[input[0]]
   if (ENV[input[0]]) return ENV[input[0]]
@@ -218,6 +220,7 @@ const parseDefine = (input) => {
   arr.push(defineFunc, iden, val1)
   applyFunction(arr, count + 3)
   input = findCloseBracket(val2)
+  console.log(ENV[iden])
   return input[1]
 }
 
@@ -229,7 +232,7 @@ const parsePrint = (input) => {
   let [[, printFunc, , exp], rest] = output
   arr.push(printFunc)
   ENV[exp] ? arr.push(ENV[exp]) : arr.push(exp)
-  console.log('Evaluate to ' + applyFunction(arr, count))
+  console.log(' ' + applyFunction(arr, count))
   return rest
 }
 
@@ -247,11 +250,10 @@ const parseIf = (input) => {
 const parseStatement = (input) => parserFactory(parseDefine, parsePrint, parseIf)(input)
 
 const parseProgram = (input) => {
-  while (input !== '' && input !== null) {
+    while (input !== '' && input !== null) {
     let spaceParsed = ''
     input = (spaceParsed = skipSpaces(input)) ? spaceParsed[1] : input
     input = parseStatement(input)
   }
-  return ENV
+  return ''
 }
-console.log((output = parseProgram(input)) ? output : 'Error')
