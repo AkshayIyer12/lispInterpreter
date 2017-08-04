@@ -95,42 +95,30 @@ const parseOperators = (input, key) => {
   let count = 1
   if (!input.startsWith('(')) return null
   input = input.slice(1)
-  if (input.startsWith('>') || input.startsWith('>=') ||
-    input.startsWith('<') || input.startsWith('<=') ||
-    input.startsWith('==') || input.startsWith('max') ||
-    input.startsWith('min')) {
-    count++
-  }
-  let output = findOperator(input)
-  if (output === null) return null
-  let result = [], vid = '', env = 'env', type = 'type', args = 'args'
+  if (findGT(input) || findGTEQ(input) || findLT(input) || findLTEQ(input) || findEQ(input) || findMax(input) || findMin(input)) count++
+  let result = [], vid = ''
+  let output = (vid = findOperator(input)) ? vid : null
   result.push(output[0])
   while (output[0] !== ')') {
     output = skipSpaces(output[1])
     output = parseExpression(output[1], key)
-    if (key !== undefined && ENV[key].type === 'lambda' && ENV[key].env[output[0]] !== undefined) {
-      result.push(ENV[key].env[output[0]])
-    }
-    else if (ENV[output[0]] !== undefined && ENV[output[0]].type === 'list') {
-      result.push(ENV[output[0]].args)
-    }
-    else if (ENV[output[0]]) {
-      result.push(ENV[output[0]])
-    }
-    else {
-      result.push(output[0])
-    }
+    result.push(findType(output, key))
     output = (vid = findCloseBracket(output[1])) ? vid : output
   }
   if (output[0] === ')') {
-    if (output[1] === '') {
-      return [applyFunction(result, count)]
-    } else {
-      return [applyFunction(result, count), output[1]]
-    }
+    if (output[1] === '') return [applyFunction(result, count)]
+    return [applyFunction(result, count), output[1]]
   }
 }
 
+const findType = (input, key) => {
+  let type = 'type'
+  if (ENV[input[0]] !== undefined && ENV[input[0]].type === 'list') return ENV[input[0]].args
+  if (key !== undefined && ENV[key].type === 'lambda' && ENV[key].env[input[0]] !== undefined) return ENV[key].env[input[0]]
+  if (ENV[input[0]]) return ENV[input[0]]
+  else
+    return input[0]
+}
 const applyFunction = (input, count) => {
   let operation = input.shift()
   if (count > 1) return operation(...input)
@@ -174,7 +162,9 @@ const defineLambda = (input) => {
   obj.type = Type, obj.args = Args, obj.body = Body, obj.env = {}
   return [obj, rest, count]
 }
-
+const checkNumIden = (input) => {
+  
+}
 const parseLambda = (input) => {
   if (!input.startsWith('(')) return null
   input = input.slice(1)
@@ -185,18 +175,18 @@ const parseLambda = (input) => {
     let key = output[0], arr = []
     while (!output[1].startsWith(')')) {
       output = skipSpaces(output[1])
-      if (findNumber(output[1])) {
+        if (findNumber(output[1])) {
         output = findNumber(output[1])
         arr.push(output[0])
       }
-      if (findIdentifier(output[1])) {
+     if (findIdentifier(output[1])) {
         output = findIdentifier(output[1])
         if (ENV[output[0]] !== undefined) {
           output[0] = ENV[output[0]]
           arr.push(output[0])
         }
-      }
-      if (output[1].startsWith('(')) {
+    }
+     if (output[1].startsWith('(')) {
         output = parseLambda(output[1])
         arr.push(output[0][0])
       }
