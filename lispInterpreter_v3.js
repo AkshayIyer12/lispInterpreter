@@ -27,16 +27,15 @@ const not = (a) => !a
 const max = (a, b) => a > b ? a : b
 const min = (a, b) => a < b ? a : b
 const listCall = (a) => { return { type: 'list', args: a } }
-const car = (a) => a[0].shift()
-const cdr = (a) => {
-  a[0].shift()
-  return a[0]
-}
+const car = (a) => a[0][0]
+const cdr = (a) => a[0].slice(1)
 const cons = (a) => {
-  a[1].unshift(a[0])
-  return a[1]
+  let temp = []
+  temp.push(a[0])
+  a[1].map((b) => temp.push(b))
+  return temp
 }
-const isList = (a) => !!(Array.isArray(a))
+const isList = (a) => (Array.isArray(a))
 const operationDefine = (a, b) => { ENV[a] = b }
 const operationPrint = (a) => (ENV[a]) ? console.log(ENV[a]) : a
 const operationIf = (a, b, c) => a ? b : c
@@ -67,6 +66,7 @@ const findLambda = (data) => data.startsWith('lambda') ? ['lambda', data.slice(6
 const findOpenBracket = (input) => (input.startsWith('(')) ? ['(', input.slice(1)] : null
 const findCloseBracket = (input) => (input.startsWith(')')) ? [')', input.slice(1)] : null
 
+// parsers.reduce((accum, parser) => parser(input, key))
 const parserFactory = (...parsers) => (input, key) => {
   for (let parser of parsers) {
     let output = parser(input, key)
@@ -95,20 +95,20 @@ const parseOperators = (input, key) => {
   let count = 1
   if (!input.startsWith('(')) return null
   input = input.slice(1)
-  if (findGT(input) || findGTEQ(input) || findLT(input) || findLTEQ(input) || findEQ(input) || 
-      findMax(input) || findMin(input)) count++
-  let result = [], vid = ''
-  let output = (vid = findOperator(input)) ? vid : null
+  if ((parserFactory(findGT, findGTEQ, findLT, findLTEQ, findEQ, findMax, findMin)(input)) !== null) count++
+  let result = [], findItem = ''
+  let output = (findItem = findOperator(input)) ? findItem : null
   result.push(output[0])
   while (output[0] !== ')') {
     output = skipSpaces(output[1])
     output = parseExpression(output[1], key)
     result.push(findType(output, key))
-    output = (vid = findCloseBracket(output[1])) ? vid : output
+    output = (findItem = findCloseBracket(output[1])) ? findItem : output
   }
   if (output[0] === ')') {
-    if (output[1] === '') return [applyFunction(result, count)]
-    return [applyFunction(result, count), output[1]]
+    let compute = applyFunction(result, count)
+    if (output[1] === '') return [compute]
+    return [compute, output[1]]
   }
 }
 
@@ -117,26 +117,25 @@ const findType = (input, key) => {
   if (ENV[input[0]] !== undefined && ENV[input[0]].type === 'list') return ENV[input[0]].args
   if (key !== undefined && ENV[key].type === 'lambda' && ENV[key].env[input[0]] !== undefined) return ENV[key].env[input[0]]
   if (ENV[input[0]]) return ENV[input[0]]
-  else {
-    return input[0]
-  }
+  return input[0]
 }
 const applyFunction = (input, count) => {
   let operation = input.shift()
   if (count > 1) return operation(...input)
-  else return operation(input)
+  return operation(input)
 }
 
 const parseExpression = (input, key) => parserFactory(findNumber, findString,
   parseLambda, findIdentifier, parseOperators)(input, key)
 
 const findLambdaArguments = (input) => {
-  let result = [], output
   input = findOpenBracket(input)
   input = input[1]
+  let result = []
   while (!input.startsWith(')')) {
     input = findIdentifier(input)
     result.push(input[0])
+    let output
     input = (output = skipSpaces(input[1])) ? output[1] : input[1]
   }
   input = findCloseBracket(input)
@@ -156,11 +155,11 @@ const findLambdaBody = (input) => {
 }
 
 const defineLambda = (input) => {
-  let obj = {}, count = 3
   let output = allParser(findOpenBracket, findLambda, skipSpaces, findLambdaArguments,
     skipSpaces, findLambdaBody, findCloseBracket)(input)
   if (output === null) return null
   let [[, Type, , Args, , Body], rest] = output
+  let obj = {}, count = 3
   obj.type = Type, obj.args = Args, obj.body = Body, obj.env = {}
   return [obj, rest, count]
 }
@@ -190,16 +189,16 @@ const parseLambda = (input) => {
   if (input === null) return null
   let output = findIdentifier(input)
   if (output === null || ENV[output[0]] === undefined || output[0] === 'if') return null
-  let type = 'type'
   if (ENV[output[0]].type === 'lambda') {
     let key = output[0], arr = []
     output = findIdenNum(output, arr)
-    let args = 'args', body = 'body', env = {}
+    let env = {}
     for (let i = 0; i < arr.length; i++) {
       env[ENV[key].args[i]] = arr[i]
     }
     ENV[key].env = env
     env = {}
+    let args = ''
     output = (args = findCloseBracket(output[1])) ? args : output
     if (output[0] === ')') {
       return [parseOperators(ENV[key].body, key), output[1]]
@@ -231,7 +230,7 @@ const parsePrint = (input) => {
   arr.push(printFunc)
   ENV[exp] ? arr.push(ENV[exp]) : arr.push(exp)
   console.log('Evaluate to ' + applyFunction(arr, count))
-  return (rest === null) ? null : rest
+  return rest
 }
 
 const parseIf = (input) => {
