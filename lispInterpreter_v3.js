@@ -4,8 +4,10 @@ const rl = readline.createInterface({
   output: process.stdout,
   prompt: '>'
 })
+rl.prompt()
 rl.on('line', (line) => {
   console.log(parseProgram(line))
+  rl.prompt()
 }).on('close', () => {
   process.exit(0)
 })
