@@ -26,54 +26,45 @@ const findString = (data) => {
   return null
 }
 
-const add = input => input.reduce((accum, value) => (ENV[value]) ? accum + ENV[value] : accum + value, 0)
-const sub = input => input.reduce((accum, value) => (ENV[value]) ? accum - ENV[value] : accum - value)
-const mul = input => input.reduce((accum, value) => (ENV[value]) ? accum * ENV[value] : accum * value, 1)
-const div = input => input.reduce((accum, value) => (ENV[value]) ? (accum / ENV[value]) : (accum / value))
-const gt = (a, b) => a > b
-const lt = (a, b) => a < b
-const gteq = (a, b) => a >= b
-const lteq = (a, b) => a <= b
-const eq = (a, b) => a === b
-const not = (a) => !a
-const max = (a, b) => a > b ? a : b
-const min = (a, b) => a < b ? a : b
-const listCall = (a) => { return { type: 'list', args: a } }
-const car = (a) => a[0][0]
-const cdr = (a) => a[0].slice(1)
-const cons = (a) => {
-  let temp = []
-  temp.push(a[0])
-  a[1].map((b) => temp.push(b))
-  return temp
+const determineOperator = (input) => {
+  let op = ''
+  for (let i = 0; i < 6; i++) {
+    if (input[i] !== ' ') {
+      op = op.concat(input[i])
+    } else {
+      break
+    }
+  }
+  switch (op) {
+    case '+' : return [input => input.reduce((accum, value) => (ENV[value]) ? accum + ENV[value] : accum + value, 0), input.slice(op.length)]
+    case '-' : return [input => input.reduce((accum, value) => (ENV[value]) ? accum - ENV[value] : accum - value), input.slice(op.length)]
+    case '*' : return [input => input.reduce((accum, value) => (ENV[value]) ? accum * ENV[value] : accum * value, 1), input.slice(op.length)]
+    case '/' : return [input => input.reduce((accum, value) => (ENV[value]) ? accum / ENV[value] : accum / value), input.slice(op.length)]
+    case '>' : return [(a, b) => a > b, input.slice(op.length), 3]
+    case '<' : return [(a, b) => a < b, input.slice(op.length), 3]
+    case '>=' : return [(a, b) => a >= b, input.slice(op.length), 3]
+    case '<=' : return [(a, b) => a <= b, input.slice(op.length), 3]
+    case '==' : return [(a, b) => a === b, input.slice(op.length), 3]
+    case 'max' : return [(a, b) => a > b ? a : b, input.slice(op.length), 3]
+    case 'min' : return [(a, b) => a < b ? a : b, input.slice(op.length), 3]
+    case 'not' : return [(a) => !a, input.slice(op.length), 3]
+    case 'list' : return [(a) => { return { type: 'list', args: a } }, input.slice(op.length)]
+    case 'car' : return [(a) => a[0][0], input.slice(op.length)]
+    case 'cdr' : return [(a) => a[0].slice(1), input.slice(op.length)]
+    case 'cons' : return [(a) => {
+      let temp = []
+      temp.push(a[0])
+      a[1].map((b) => temp.push(b))
+      return temp
+    }, input.slice(op.length)]
+    case 'isList' : return [(a) => (Array.isArray(a)), input.slice(op.length)]
+    default : return null
+  }
 }
-const isList = (a) => (Array.isArray(a))
-const operationDefine = (a, b) => { ENV[a] = b }
-const operationPrint = (a) => (ENV[a]) ? console.log(ENV[a]) : a
-const operationIf = (a, b, c) => a ? b : c
 
-const findPlus = (data) => data.startsWith('+') ? [add, data.slice(1)] : null
-const findMinus = (data) => data.startsWith('-') ? [sub, data.slice(1)] : null
-const findMult = (data) => data.startsWith('*') ? [mul, data.slice(1)] : null
-const findDiv = (data) => data.startsWith('/') ? [div, data.slice(1)] : null
-const findGT = (data) => data.startsWith('>') ? [gt, data.slice(1)] : null
-const findLT = (data) => data.startsWith('<') ? [lt, data.slice(1)] : null
-const findGTEQ = (data) => data.startsWith('>=') ? [gteq, data.slice(2)] : null
-const findLTEQ = (data) => data.startsWith('<=') ? [lteq, data.slice(2)] : null
-const findEQ = (data) => data.startsWith('==') ? [eq, data.slice(2)] : null
-const findMax = (data) => data.startsWith('max') ? [max, data.slice(3)] : null
-const findMin = (data) => data.startsWith('min') ? [min, data.slice(3)] : null
-const findNot = (data) => data.startsWith('not') ? [not, data.slice(3)] : null
-
-const findList = (data) => data.startsWith('list') ? [listCall, data.slice(4)] : null
-const findCar = (data) => data.startsWith('car') ? [car, data.slice(3)] : null
-const findCdr = (data) => data.startsWith('cdr') ? [cdr, data.slice(3)] : null
-const findCons = (data) => data.startsWith('cons') ? [cons, data.slice(4)] : null
-const findIsList = (data) => data.startsWith('isList') ? [isList, data.slice(6)] : null
-
-const findDefine = (data) => data.startsWith('define') ? [operationDefine, data.slice(6)] : null
-const findIf = (data) => data.startsWith('if') ? [operationIf, data.slice(2)] : null
-const findPrint = (data) => data.startsWith('print') ? [operationPrint, data.slice(5)] : null
+const findDefine = (data) => data.startsWith('define') ? [(a, b) => { ENV[a] = b }, data.slice(6)] : null
+const findIf = (data) => data.startsWith('if') ? [(a, b, c) => a ? b : c, data.slice(2)] : null
+const findPrint = (data) => data.startsWith('print') ? [(a) => (ENV[a]) ? console.log(ENV[a]) : a, data.slice(5)] : null
 const findLambda = (data) => data.startsWith('lambda') ? ['lambda', data.slice(6)] : null
 const findOpenBracket = (input) => (input.startsWith('(')) ? ['(', input.slice(1)] : null
 const findCloseBracket = (input) => (input.startsWith(')')) ? [')', input.slice(1)] : null
@@ -91,18 +82,13 @@ const allParser = (...parsers) => (input) => {
   return [result, input]
 }
 
-const findOperator = (input) => parserFactory(findPlus, findMinus, findMult,
-  findDiv, findGTEQ, findLTEQ, findEQ,
-  findGT, findLT, findMax, findMin, findNot, findList,
-  findCar, findCdr, findCons, findIsList)(input)
-
 const parseOperators = (input, key) => {
   let count = 1
   if (!input.startsWith('(')) return null
   input = input.slice(1)
-  if ((parserFactory(findGT, findGTEQ, findLT, findLTEQ, findEQ, findMax, findMin)(input)) !== null) count++
   let result = [], findItem = ''
-  let output = (findItem = findOperator(input)) ? findItem : null
+  let output = (findItem = determineOperator(input)) ? findItem : null
+  if (output[2]) count = output[2]
   result.push(output[0])
   while (output[0] !== ')') {
     output = skipSpaces(output[1])
@@ -252,7 +238,7 @@ const parseIf = (input) => {
 const parseStatement = (input) => parserFactory(parseDefine, parsePrint, parseIf)(input)
 
 const parseProgram = (input) => {
-    while (input !== '' && input !== null) {
+  while (input !== '' && input !== null) {
     let spaceParsed = ''
     input = (spaceParsed = skipSpaces(input)) ? spaceParsed[1] : input
     input = parseStatement(input)
